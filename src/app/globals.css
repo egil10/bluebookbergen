@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #fbfcfe;
+  --ink: #0b1d3a;
+  --line: #e6eaf0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Leaflet styles, inlined so we don't depend on a CDN */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #f4f7fb;
+  font-family: inherit;
+}
+.leaflet-tile {
+  filter: saturate(0.7) brightness(1.02);
+}
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.8) !important;
+  font-size: 10px !important;
+  color: #4b5563 !important;
+}
+.leaflet-bar a {
+  background: #fff !important;
+  color: var(--ink) !important;
+  border-bottom-color: var(--line) !important;
+}
+
+.street-pop {
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Tiny utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
