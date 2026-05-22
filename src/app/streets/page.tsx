@@ -5,17 +5,19 @@ import { Search, ListOrdered, X } from "lucide-react";
 import { GameShell } from "@/components/GameShell";
 import BergenMap from "@/components/MapClient";
 import { AreaPicker } from "@/components/AreaPicker";
-import { ZoomToggle } from "@/components/MapOptions";
+import { StylePicker, ZoomControl } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
 import { normaliseName } from "@/lib/geo";
 import { DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
-import type { ZoomMode } from "@/components/Map";
+import type { MapStyle, ZoomMode } from "@/components/Map";
 import type { BergenData, Street } from "@/lib/types";
 
 export default function StreetsPage() {
   const [data, setData] = useState<BergenData | null>(null);
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
-  const [zoom, setZoom] = useState<ZoomMode>("auto");
+  const [zoom, setZoom] = useState<ZoomMode>("fixed");
+  const [zoomLevel, setZoomLevel] = useState(15);
+  const [mapStyle, setMapStyle] = useState<MapStyle>("light");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Street | null>(null);
 
@@ -36,17 +38,23 @@ export default function StreetsPage() {
 
   return (
     <GameShell
-      title="Every street in Bergen Sentrum"
+      title="Every street in Bergen"
       subtitle={
         data
-          ? `${data.streets.length} streets, ${data.pois.length} landmarks. Pick an area, then tap a name to see it traced.`
+          ? `${data.streets.length} streets in the dataset, ${data.pois.length} landmarks. Filter, search, click a name to trace it.`
           : ""
       }
       loading={!data}
       side={
         <>
           <AreaPicker area={area} onChange={setArea} />
-          <ZoomToggle value={zoom} onChange={setZoom} />
+          <ZoomControl
+            mode={zoom}
+            onModeChange={setZoom}
+            level={zoomLevel}
+            onLevelChange={setZoomLevel}
+          />
+          <StylePicker value={mapStyle} onChange={setMapStyle} />
 
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
@@ -61,7 +69,7 @@ export default function StreetsPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search this area…"
-                className="w-full pl-8 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-md text-ink placeholder:text-slate-400 focus:outline-none focus:border-bergen-500 focus:bg-white text-sm"
+                className="w-full pl-8 pr-8 py-2 bg-white/70 border border-slate-200 rounded-xl text-ink placeholder:text-slate-400 focus:outline-none focus:border-bergen-500 focus:bg-white text-sm transition-colors"
               />
               {query && (
                 <button
@@ -78,8 +86,8 @@ export default function StreetsPage() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 flex flex-col rounded-md border border-slate-200 bg-white overflow-hidden">
-            <ul className="flex-1 overflow-auto divide-y divide-slate-100">
+          <div className="flex-1 min-h-0 flex flex-col rounded-xl border border-slate-200 bg-white/70 overflow-hidden">
+            <ul className="flex-1 overflow-auto thin-scrollbar divide-y divide-slate-100">
               {filtered.map((s) => {
                 const isSel = s === selected;
                 return (
@@ -89,8 +97,8 @@ export default function StreetsPage() {
                       className={
                         "w-full text-left px-3 py-1.5 text-sm transition-colors flex items-baseline gap-2 " +
                         (isSel
-                          ? "bg-bergen-100 text-bergen-800"
-                          : "hover:bg-slate-50 text-slate-700")
+                          ? "bg-bergen-50 text-bergen-800"
+                          : "hover:bg-slate-50/70 text-slate-700")
                       }
                     >
                       <span className="truncate">{s.name}</span>
@@ -118,6 +126,8 @@ export default function StreetsPage() {
           area={area}
           fitArea={selected ? null : area}
           zoomMode={zoom}
+          zoomLevel={zoomLevel}
+          mapStyle={mapStyle}
         />
       }
     />

@@ -12,9 +12,10 @@ export interface Area {
   group: "all" | "bydel" | "sentrum"; // for grouping in the picker
 }
 
-// Approximate bboxes around each bydel for map framing and as a fallback
-// when a street has no bydel attached. They overlap a little, which is
-// fine — bydel-name matching takes precedence.
+// Tightened, ground-checked bboxes around each bydel and the Sentrum
+// sub-areas. Bydel-name matching takes precedence for streets that exist
+// in the kommune register; bbox is the visual frame and the fallback for
+// minor streets / paths.
 export const AREAS: Area[] = [
   {
     id: "all",
@@ -26,95 +27,95 @@ export const AREAS: Area[] = [
   {
     id: "bergenhus",
     name: "Bergenhus",
-    blurb: "Sentrum, Nordnes, Sandviken, Skuteviken.",
-    bbox: [60.385, 5.285, 60.430, 5.350],
+    blurb: "Sentrum, Nordnes, Sandviken, Skuteviken, Eidsvåg.",
+    bbox: [60.385, 5.288, 60.428, 5.348],
     bydeler: ["BERGENHUS", "BERGENH-ÅSANE", "LAKSV/BERGENH"],
     group: "bydel",
   },
   {
     id: "arstad",
     name: "Årstad",
-    blurb: "Møhlenpris, Solheim, Kronstad, Kalfaret.",
-    bbox: [60.358, 5.310, 60.395, 5.380],
+    blurb: "Møhlenpris, Solheim, Kronstad, Kalfaret, Haukeland.",
+    bbox: [60.360, 5.310, 60.392, 5.378],
     bydeler: ["ÅRSTAD"],
     group: "bydel",
   },
   {
     id: "laksevag",
     name: "Laksevåg",
-    blurb: "Damsgård, Gravdal, Loddefjord and the rest of the west side.",
-    bbox: [60.330, 5.080, 60.395, 5.310],
+    blurb: "Damsgård, Gravdal, Loddefjord, Olsvik, Mathopen.",
+    bbox: [60.336, 5.140, 60.405, 5.300],
     bydeler: ["LAKSEVÅG", "LAKSEVÅG m.fl.", "LAKSV/BERGENH"],
     group: "bydel",
   },
   {
     id: "fyllingsdalen",
     name: "Fyllingsdalen",
-    blurb: "South-west, in the valley behind Løvstakken.",
-    bbox: [60.330, 5.200, 60.380, 5.300],
+    blurb: "The valley behind Løvstakken — Spelhaugen up to Storrinden.",
+    bbox: [60.340, 5.215, 60.382, 5.298],
     bydeler: ["FYLLINGSDALEN"],
     group: "bydel",
   },
   {
     id: "ytrebygda",
     name: "Ytrebygda",
-    blurb: "Sandsli, Kokstad, Flesland — south near the airport.",
-    bbox: [60.260, 5.180, 60.345, 5.350],
+    blurb: "Sandsli, Kokstad, Flesland, Birkeland — south near the airport.",
+    bbox: [60.265, 5.180, 60.348, 5.330],
     bydeler: ["YTREBYGDA", "FANA YTREBYGDA"],
     group: "bydel",
   },
   {
     id: "fana",
     name: "Fana",
-    blurb: "Nesttun, Paradis, Skjold and the long south.",
-    bbox: [60.220, 5.300, 60.345, 5.500],
+    blurb: "Nesttun, Paradis, Skjold, Fana, Krokeide.",
+    bbox: [60.215, 5.310, 60.355, 5.495],
     bydeler: ["FANA", "FANA YTREBYGDA"],
     group: "bydel",
   },
   {
     id: "arna",
     name: "Arna",
-    blurb: "East of Ulriken — Indre and Ytre Arna.",
-    bbox: [60.380, 5.430, 60.490, 5.550],
+    blurb: "East of Ulriken — Indre Arna, Ytre Arna, Espeland.",
+    bbox: [60.385, 5.420, 60.495, 5.560],
     bydeler: ["ARNA"],
     group: "bydel",
   },
   {
     id: "asane",
     name: "Åsane",
-    blurb: "North — Eidsvåg, Tertnes, Salhus, Hordvik.",
-    bbox: [60.430, 5.260, 60.560, 5.420],
+    blurb: "North of Eidsvåg — Tertnes, Nyborg, Salhus, Hordvik.",
+    bbox: [60.428, 5.260, 60.560, 5.420],
     bydeler: ["ÅSANE", "BERGENH-ÅSANE"],
     group: "bydel",
   },
-  // Sentrum sub-areas inside Bergenhus + Årstad — these don't have a bydel
-  // mapping; pure bbox filtering.
+  // Sentrum sub-areas — handy zoom-ins inside Bergenhus + Årstad. Pure bbox
+  // filtering since they don't map to a bydel.
   {
     id: "kjernen",
     name: "Sentrum kjernen",
     blurb: "The dense core — Torgallmenningen, Bryggen, Vågsbunnen.",
-    bbox: [60.390, 5.318, 60.402, 5.336],
+    bbox: [60.391, 5.318, 60.401, 5.336],
     group: "sentrum",
   },
   {
     id: "nordnes",
     name: "Nordnes",
     blurb: "The peninsula west of Vågen, out to the aquarium.",
-    bbox: [60.392, 5.290, 60.406, 5.319],
+    bbox: [60.394, 5.288, 60.404, 5.320],
     group: "sentrum",
   },
   {
     id: "sandviken",
     name: "Sandviken",
-    blurb: "North of the harbour, up past Sandvikskirken.",
-    bbox: [60.401, 5.318, 60.413, 5.345],
+    blurb: "North of the harbour, up past Sandvikskirken to Skuteviken.",
+    bbox: [60.401, 5.318, 60.418, 5.345],
     group: "sentrum",
   },
   {
     id: "mohlenpris",
     name: "Møhlenpris",
-    blurb: "South-west of Sentrum, around Olav Kyrres gate down to Nygård.",
-    bbox: [60.380, 5.308, 60.392, 5.328],
+    blurb: "South-west of Sentrum, around Olav Kyrres gate and Nygård.",
+    bbox: [60.382, 5.310, 60.392, 5.328],
     group: "sentrum",
   },
 ];

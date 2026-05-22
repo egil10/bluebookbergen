@@ -102,3 +102,14 @@ export function distanceScore(m: number): number {
 export function pickRandom<T>(arr: T[], rng: () => number = Math.random): T {
   return arr[Math.floor(rng() * arr.length)];
 }
+
+// Fisher–Yates shuffle, returning a new array. Used by every game mode to
+// produce a deck that plays through without repeats before reshuffling.
+export function shuffle<T>(arr: T[], rng: () => number = Math.random): T[] {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}

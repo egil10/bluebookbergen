@@ -1,21 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapPin, SkipForward, Check, RotateCcw } from "lucide-react";
 import { GameShell, ScoreBadge } from "@/components/GameShell";
 import BergenMap from "@/components/MapClient";
 import { AreaPicker } from "@/components/AreaPicker";
-import { ZoomToggle } from "@/components/MapOptions";
+import { StylePicker, ZoomControl } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
-import { fmtMetres, haversine } from "@/lib/geo";
+import { fmtMetres, haversine, shuffle } from "@/lib/geo";
 import { DEFAULT_AREA, poiInArea, type Area } from "@/lib/areas";
-import type { ZoomMode } from "@/components/Map";
+import type { MapStyle, ZoomMode } from "@/components/Map";
 import type { BergenData, LatLng, Poi } from "@/lib/types";
 
 type Phase = "guessing" | "revealed";
 
-// Tighter than the street locator — exact pin should be within 30 m to score
-// full marks, decaying to 0 by 400 m.
 function pinScore(metres: number): number {
   if (metres <= 30) return 100;
   if (metres >= 400) return 0;
@@ -25,7 +23,9 @@ function pinScore(metres: number): number {
 export default function PinPage() {
   const [data, setData] = useState<BergenData | null>(null);
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
-  const [zoom, setZoom] = useState<ZoomMode>("auto");
+  const [zoom, setZoom] = useState<ZoomMode>("fixed");
+  const [zoomLevel, setZoomLevel] = useState(14);
+  const [mapStyle, setMapStyle] = useState<MapStyle>("light");
   const [target, setTarget] = useState<Poi | null>(null);
   const [guess, setGuess] = useState<LatLng | null>(null);
   const [phase, setPhase] = useState<Phase>("guessing");
@@ -43,17 +43,30 @@ export default function PinPage() {
     return pool.length > 0 ? pool : data.pois;
   }, [data, area]);
 
+  const deckRef = useRef<Poi[]>([]);
+  const cursorRef = useRef(0);
+  const [remaining, setRemaining] = useState(0);
+
+  useEffect(() => {
+    deckRef.current = shuffle(playable);
+    cursorRef.current = 0;
+    setRemaining(deckRef.current.length);
+  }, [playable]);
+
   const nextRound = useCallback(() => {
-    if (!playable.length) return;
-    let pick: Poi;
-    do {
-      pick = playable[Math.floor(Math.random() * playable.length)];
-    } while (pick === target && playable.length > 1);
+    if (deckRef.current.length === 0) return;
+    if (cursorRef.current >= deckRef.current.length) {
+      deckRef.current = shuffle(playable);
+      cursorRef.current = 0;
+    }
+    const pick = deckRef.current[cursorRef.current];
+    cursorRef.current += 1;
+    setRemaining(deckRef.current.length - cursorRef.current);
     setTarget(pick);
     setGuess(null);
     setLast(null);
     setPhase("guessing");
-  }, [playable, target]);
+  }, [playable]);
 
   useEffect(() => {
     loadBergen().then(setData);
@@ -90,14 +103,17 @@ export default function PinPage() {
     setTotalDistance(0);
     setBestDistance(null);
     setPerfectCount(0);
+    deckRef.current = shuffle(playable);
+    cursorRef.current = 0;
+    setRemaining(deckRef.current.length);
     nextRound();
   };
 
+  const answerMarker: LatLng | null =
+    phase === "revealed" && target ? [target.lat, target.lon] : null;
+
   const kpis = [
-    {
-      label: "total off",
-      value: scoredRounds > 0 ? fmtMetres(totalDistance) : "—",
-    },
+    { label: "pool", value: `${remaining}/${playable.length}` },
     {
       label: "avg",
       value:
@@ -110,8 +126,20 @@ export default function PinPage() {
     { label: "spot-on", value: String(perfectCount) },
   ];
 
-  const answerMarker: LatLng | null =
-    phase === "revealed" && target ? [target.lat, target.lon] : null;
+  // Render a fake "Street" from the POI so the fixed-zoom view can centre
+  // on it.
+  const targetAsStreet = useMemo(() => {
+    if (!target) return null;
+    return {
+      name: target.name,
+      highway: target.kind,
+      oneway: false,
+      segments: [
+        { id: -1, coords: [[target.lat, target.lon]] as LatLng[] },
+      ],
+      center: [target.lat, target.lon] as LatLng,
+    };
+  }, [target]);
 
   return (
     <GameShell
@@ -122,7 +150,13 @@ export default function PinPage() {
       side={
         <>
           <AreaPicker area={area} onChange={setArea} />
-          <ZoomToggle value={zoom} onChange={setZoom} />
+          <ZoomControl
+            mode={zoom}
+            onModeChange={setZoom}
+            level={zoomLevel}
+            onLevelChange={setZoomLevel}
+          />
+          <StylePicker value={mapStyle} onChange={setMapStyle} />
 
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
@@ -140,7 +174,7 @@ export default function PinPage() {
           </div>
 
           {phase === "guessing" && (
-            <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
               {guess
                 ? "Pin placed. Hit Check answer when you're ready."
                 : "Click the map to drop your pin on the exact spot."}
@@ -148,7 +182,7 @@ export default function PinPage() {
           )}
 
           {phase === "revealed" && last && (
-            <div className="rounded-md border border-slate-200 p-3 bg-bergen-50/40">
+            <div className="rounded-xl border border-slate-200 p-3 bg-bergen-50/40">
               <div className="text-sm text-slate-500">You were off by</div>
               <div className="text-2xl font-semibold tracking-tight text-ink mt-0.5">
                 {fmtMetres(last.distance)}
@@ -164,28 +198,28 @@ export default function PinPage() {
               <button
                 onClick={submit}
                 disabled={!guess}
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-md text-sm font-medium hover:bg-bergen-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-bergen-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 <Check size={16} /> Check answer
               </button>
             ) : (
               <button
                 onClick={nextRound}
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-md text-sm font-medium hover:bg-bergen-700 transition-colors"
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-bergen-700 transition-all"
               >
                 Next address
               </button>
             )}
             <button
               onClick={skip}
-              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300 bg-white/60 transition-all"
               title="Skip"
             >
               <SkipForward size={16} />
             </button>
             <button
               onClick={reset}
-              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300 bg-white/60 transition-all"
               title="Reset score"
             >
               <RotateCcw size={16} />
@@ -200,7 +234,10 @@ export default function PinPage() {
           onMapClick={(p) => phase === "guessing" && setGuess(p)}
           area={area}
           fitArea={area}
+          fitTarget={targetAsStreet}
           zoomMode={zoom}
+          zoomLevel={zoomLevel}
+          mapStyle={mapStyle}
         />
       }
     />

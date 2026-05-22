@@ -1,15 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Crosshair, SkipForward, Check, RotateCcw } from "lucide-react";
 import { GameShell, ScoreBadge } from "@/components/GameShell";
 import BergenMap from "@/components/MapClient";
 import { AreaPicker } from "@/components/AreaPicker";
-import { ZoomToggle } from "@/components/MapOptions";
+import { StylePicker, ZoomControl } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
-import { distanceScore, distanceToStreet, fmtMetres } from "@/lib/geo";
+import {
+  distanceScore,
+  distanceToStreet,
+  fmtMetres,
+  shuffle,
+} from "@/lib/geo";
 import { DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
-import type { ZoomMode } from "@/components/Map";
+import type { MapStyle, ZoomMode } from "@/components/Map";
 import type { BergenData, LatLng, Street } from "@/lib/types";
 
 type Phase = "guessing" | "revealed";
@@ -17,7 +22,9 @@ type Phase = "guessing" | "revealed";
 export default function LocatePage() {
   const [data, setData] = useState<BergenData | null>(null);
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
-  const [zoom, setZoom] = useState<ZoomMode>("auto");
+  const [zoom, setZoom] = useState<ZoomMode>("fixed");
+  const [zoomLevel, setZoomLevel] = useState(14);
+  const [mapStyle, setMapStyle] = useState<MapStyle>("light");
   const [target, setTarget] = useState<Street | null>(null);
   const [guess, setGuess] = useState<LatLng | null>(null);
   const [phase, setPhase] = useState<Phase>("guessing");
@@ -39,18 +46,34 @@ export default function LocatePage() {
     });
   }, [data, area]);
 
+  // A deck of all playable streets, drawn in shuffled order without
+  // repeats until the deck is exhausted. Reshuffles whenever the pool
+  // changes (area / data load).
+  const deckRef = useRef<Street[]>([]);
+  const cursorRef = useRef(0);
+  const [remaining, setRemaining] = useState(0);
+
+  useEffect(() => {
+    deckRef.current = shuffle(playable);
+    cursorRef.current = 0;
+    setRemaining(deckRef.current.length);
+  }, [playable]);
+
   const nextRound = useCallback(() => {
-    if (!playable.length) return;
-    let pick: Street;
-    do {
-      pick = playable[Math.floor(Math.random() * playable.length)];
-    } while (pick === target && playable.length > 1);
+    if (deckRef.current.length === 0) return;
+    if (cursorRef.current >= deckRef.current.length) {
+      deckRef.current = shuffle(playable);
+      cursorRef.current = 0;
+    }
+    const pick = deckRef.current[cursorRef.current];
+    cursorRef.current += 1;
+    setRemaining(deckRef.current.length - cursorRef.current);
     setTarget(pick);
     setGuess(null);
     setLastDistance(null);
     setLastPoints(null);
     setPhase("guessing");
-  }, [playable, target]);
+  }, [playable]);
 
   useEffect(() => {
     loadBergen().then(setData);
@@ -88,16 +111,19 @@ export default function LocatePage() {
     setTotalDistance(0);
     setBestDistance(null);
     setPerfectCount(0);
+    deckRef.current = shuffle(playable);
+    cursorRef.current = 0;
+    setRemaining(deckRef.current.length);
     nextRound();
   };
 
   const kpis = [
     {
-      label: "total off",
-      value: scoredRounds > 0 ? fmtMetres(totalDistance) : "—",
+      label: "pool",
+      value: `${remaining}/${playable.length}`,
     },
     {
-      label: "avg",
+      label: "avg off",
       value:
         scoredRounds > 0 ? fmtMetres(totalDistance / scoredRounds) : "—",
     },
@@ -117,7 +143,13 @@ export default function LocatePage() {
       side={
         <>
           <AreaPicker area={area} onChange={setArea} />
-          <ZoomToggle value={zoom} onChange={setZoom} />
+          <ZoomControl
+            mode={zoom}
+            onModeChange={setZoom}
+            level={zoomLevel}
+            onLevelChange={setZoomLevel}
+          />
+          <StylePicker value={mapStyle} onChange={setMapStyle} />
 
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
@@ -130,6 +162,7 @@ export default function LocatePage() {
             {target && (
               <div className="text-xs text-slate-400 mt-1 capitalize">
                 {target.highway.replace(/_/g, " ")}
+                {target.bydel ? ` · ${target.bydel.toLowerCase()}` : ""}
               </div>
             )}
           </div>
@@ -198,6 +231,8 @@ export default function LocatePage() {
           area={area}
           fitArea={area}
           zoomMode={zoom}
+          zoomLevel={zoomLevel}
+          mapStyle={mapStyle}
         />
       }
     />

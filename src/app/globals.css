@@ -6,6 +6,7 @@
   --bg: #fbfcfe;
   --ink: #0b1d3a;
   --line: #e6eaf0;
+  --bergen-700: #33547b;
 }
 
 html,
@@ -13,11 +14,25 @@ body {
   height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(1100px 600px at 80% -10%, rgba(167, 198, 232, 0.45), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(232, 220, 200, 0.35), transparent 60%),
+    linear-gradient(180deg, #fbfcfe 0%, #f6f8fb 100%);
+  background-attachment: fixed;
   color: var(--ink);
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(61, 103, 152, 0.18);
+  color: var(--ink);
 }
 
 /* Leaflet styles, inlined so we don't depend on a CDN */
@@ -27,30 +42,93 @@ body {
   background: #f4f7fb;
   font-family: inherit;
 }
-.leaflet-tile {
-  filter: saturate(0.7) brightness(1.02);
-}
 .leaflet-control-attribution {
   background: rgba(255, 255, 255, 0.8) !important;
   font-size: 10px !important;
   color: #4b5563 !important;
+  backdrop-filter: blur(6px);
 }
 .leaflet-bar a {
-  background: #fff !important;
+  background: rgba(255, 255, 255, 0.9) !important;
   color: var(--ink) !important;
   border-bottom-color: var(--line) !important;
+  backdrop-filter: blur(8px);
 }
 
 .street-pop {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid var(--line);
-  padding: 6px 10px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
-  font-size: 13px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  font-size: 12px;
   white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+
+.leaflet-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+  display: none !important;
+}
+
+/* Glass card — used by the side panel + map sections */
+.glass {
+  background-color: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* Range slider tidy-up */
+input[type="range"] {
+  appearance: none;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bergen-700);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bergen-700);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
 }
 
 /* Tiny utility */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
+
+/* Quiet but smooth scrollbar for the side panel lists */
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.12);
+  border-radius: 999px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}

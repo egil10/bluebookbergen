@@ -13,9 +13,11 @@ import {
 import { GameShell, ScoreBadge } from "@/components/GameShell";
 import BergenMap from "@/components/MapClient";
 import { AreaPicker } from "@/components/AreaPicker";
+import { StylePicker } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
 import { haversine, normaliseName } from "@/lib/geo";
 import { DEFAULT_AREA, poiInArea, type Area } from "@/lib/areas";
+import type { MapStyle } from "@/components/Map";
 import type { BergenData, LatLng, Poi } from "@/lib/types";
 
 type Phase = "guessing" | "loading" | "revealed";
@@ -69,6 +71,7 @@ function pickEndpoints(pois: Poi[]): [Poi, Poi] | null {
 export default function RoutePage() {
   const [data, setData] = useState<BergenData | null>(null);
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
+  const [mapStyle, setMapStyle] = useState<MapStyle>("light");
   const [endpoints, setEndpoints] = useState<[Poi, Poi] | null>(null);
   const [streetsInput, setStreetsInput] = useState("");
   const [chips, setChips] = useState<string[]>([]);
@@ -232,6 +235,7 @@ export default function RoutePage() {
       side={
         <>
           <AreaPicker area={area} onChange={setArea} />
+          <StylePicker value={mapStyle} onChange={setMapStyle} />
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
               <RouteIcon size={12} />
@@ -413,6 +417,7 @@ export default function RoutePage() {
           extraMarkers={extraMarkers}
           fitTarget={routeAsStreet}
           area={area}
+          mapStyle={mapStyle}
         />
       }
     />

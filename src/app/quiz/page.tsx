@@ -1,40 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ListChecks, SkipForward, RotateCcw } from "lucide-react";
 import { GameShell, ScoreBadge } from "@/components/GameShell";
 import BergenMap from "@/components/MapClient";
 import { AreaPicker } from "@/components/AreaPicker";
-import { AutoNextPicker, ZoomToggle } from "@/components/MapOptions";
+import {
+  AutoNextPicker,
+  StylePicker,
+  ZoomControl,
+} from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
+import { shuffle } from "@/lib/geo";
 import { DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
-import type { ZoomMode } from "@/components/Map";
+import type { MapStyle, ZoomMode } from "@/components/Map";
 import type { BergenData, Street } from "@/lib/types";
 
 type Phase = "guessing" | "revealed";
 
 function pickN<T>(arr: T[], n: number, exclude: T): T[] {
   const pool = arr.filter((x) => x !== exclude);
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  return pool.slice(0, n);
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+  return shuffle(pool).slice(0, n);
 }
 
 export default function QuizPage() {
   const [data, setData] = useState<BergenData | null>(null);
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
-  const [zoom, setZoom] = useState<ZoomMode>("auto");
+  const [zoom, setZoom] = useState<ZoomMode>("fixed");
+  const [zoomLevel, setZoomLevel] = useState(14);
+  const [mapStyle, setMapStyle] = useState<MapStyle>("light");
   const [autoNextMs, setAutoNextMs] = useState(0);
   const [target, setTarget] = useState<Street | null>(null);
   const [options, setOptions] = useState<Street[]>([]);
@@ -56,19 +50,32 @@ export default function QuizPage() {
     });
   }, [data, area]);
 
+  const deckRef = useRef<Street[]>([]);
+  const cursorRef = useRef(0);
+  const [remaining, setRemaining] = useState(0);
+
+  useEffect(() => {
+    deckRef.current = shuffle(playable);
+    cursorRef.current = 0;
+    setRemaining(deckRef.current.length);
+  }, [playable]);
+
   const nextRound = useCallback(() => {
-    if (playable.length < 4) return;
-    let pick: Street;
-    do {
-      pick = playable[Math.floor(Math.random() * playable.length)];
-    } while (pick === target && playable.length > 1);
+    if (deckRef.current.length < 4) return;
+    if (cursorRef.current >= deckRef.current.length) {
+      deckRef.current = shuffle(playable);
+      cursorRef.current = 0;
+    }
+    const pick = deckRef.current[cursorRef.current];
+    cursorRef.current += 1;
+    setRemaining(deckRef.current.length - cursorRef.current);
     const distractors = pickN(playable, 3, pick);
     const opts = shuffle([pick, ...distractors]);
     setTarget(pick);
     setOptions(opts);
     setPicked(null);
     setPhase("guessing");
-  }, [playable, target]);
+  }, [playable]);
 
   useEffect(() => {
     loadBergen().then(setData);
@@ -118,21 +125,21 @@ export default function QuizPage() {
     setCorrectCount(0);
     setStreak(0);
     setBestStreak(0);
+    deckRef.current = shuffle(playable);
+    cursorRef.current = 0;
+    setRemaining(deckRef.current.length);
     nextRound();
   };
 
   const kpis = [
     {
+      label: "pool",
+      value: `${remaining}/${playable.length}`,
+    },
+    {
       label: "correct",
       value:
         scoredRounds > 0 ? `${correctCount}/${scoredRounds}` : "0/0",
-    },
-    {
-      label: "accuracy",
-      value:
-        scoredRounds > 0
-          ? `${Math.round((correctCount / scoredRounds) * 100)}%`
-          : "—",
     },
     { label: "streak", value: String(streak) },
     { label: "best", value: String(bestStreak) },
@@ -147,8 +154,14 @@ export default function QuizPage() {
       side={
         <>
           <AreaPicker area={area} onChange={setArea} />
+          <ZoomControl
+            mode={zoom}
+            onModeChange={setZoom}
+            level={zoomLevel}
+            onLevelChange={setZoomLevel}
+          />
           <div className="grid grid-cols-2 gap-3">
-            <ZoomToggle value={zoom} onChange={setZoom} />
+            <StylePicker value={mapStyle} onChange={setMapStyle} />
             <AutoNextPicker value={autoNextMs} onChange={setAutoNextMs} />
           </div>
 
@@ -245,6 +258,8 @@ export default function QuizPage() {
           area={area}
           fitArea={area}
           zoomMode={zoom}
+          zoomLevel={zoomLevel}
+          mapStyle={mapStyle}
         />
       }
     />

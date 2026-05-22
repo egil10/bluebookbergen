@@ -5,11 +5,11 @@ import { Type, SkipForward, Check, RotateCcw, Eye } from "lucide-react";
 import { GameShell, ScoreBadge } from "@/components/GameShell";
 import BergenMap from "@/components/MapClient";
 import { AreaPicker } from "@/components/AreaPicker";
-import { ZoomToggle } from "@/components/MapOptions";
+import { StylePicker, ZoomControl } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
-import { normaliseName, similarity } from "@/lib/geo";
+import { normaliseName, shuffle, similarity } from "@/lib/geo";
 import { DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
-import type { ZoomMode } from "@/components/Map";
+import type { MapStyle, ZoomMode } from "@/components/Map";
 import type { BergenData, Street } from "@/lib/types";
 
 type Phase = "guessing" | "revealed";
@@ -17,7 +17,9 @@ type Phase = "guessing" | "revealed";
 export default function NamePage() {
   const [data, setData] = useState<BergenData | null>(null);
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
-  const [zoom, setZoom] = useState<ZoomMode>("auto");
+  const [zoom, setZoom] = useState<ZoomMode>("fixed");
+  const [zoomLevel, setZoomLevel] = useState(14);
+  const [mapStyle, setMapStyle] = useState<MapStyle>("light");
   const [target, setTarget] = useState<Street | null>(null);
   const [text, setText] = useState("");
   const [phase, setPhase] = useState<Phase>("guessing");
@@ -57,18 +59,31 @@ export default function NamePage() {
       .slice(0, 6);
   }, [text, allNames, phase]);
 
+  const deckRef = useRef<Street[]>([]);
+  const cursorRef = useRef(0);
+  const [remaining, setRemaining] = useState(0);
+
+  useEffect(() => {
+    deckRef.current = shuffle(playable);
+    cursorRef.current = 0;
+    setRemaining(deckRef.current.length);
+  }, [playable]);
+
   const nextRound = useCallback(() => {
-    if (!playable.length) return;
-    let pick: Street;
-    do {
-      pick = playable[Math.floor(Math.random() * playable.length)];
-    } while (pick === target && playable.length > 1);
+    if (deckRef.current.length === 0) return;
+    if (cursorRef.current >= deckRef.current.length) {
+      deckRef.current = shuffle(playable);
+      cursorRef.current = 0;
+    }
+    const pick = deckRef.current[cursorRef.current];
+    cursorRef.current += 1;
+    setRemaining(deckRef.current.length - cursorRef.current);
     setTarget(pick);
     setText("");
     setVerdict(null);
     setPhase("guessing");
     setTimeout(() => inputRef.current?.focus(), 50);
-  }, [playable, target]);
+  }, [playable]);
 
   useEffect(() => {
     loadBergen().then(setData);
@@ -124,23 +139,17 @@ export default function NamePage() {
     setCorrectCount(0);
     setStreak(0);
     setBestStreak(0);
+    deckRef.current = shuffle(playable);
+    cursorRef.current = 0;
+    setRemaining(deckRef.current.length);
     nextRound();
   };
 
   const kpis = [
+    { label: "pool", value: `${remaining}/${playable.length}` },
     {
       label: "correct",
-      value:
-        scoredRounds > 0
-          ? `${correctCount}/${scoredRounds}`
-          : "0/0",
-    },
-    {
-      label: "accuracy",
-      value:
-        scoredRounds > 0
-          ? `${Math.round((correctCount / scoredRounds) * 100)}%`
-          : "—",
+      value: scoredRounds > 0 ? `${correctCount}/${scoredRounds}` : "0/0",
     },
     { label: "streak", value: String(streak) },
     { label: "best", value: String(bestStreak) },
@@ -155,7 +164,13 @@ export default function NamePage() {
       side={
         <>
           <AreaPicker area={area} onChange={setArea} />
-          <ZoomToggle value={zoom} onChange={setZoom} />
+          <ZoomControl
+            mode={zoom}
+            onModeChange={setZoom}
+            level={zoomLevel}
+            onLevelChange={setZoomLevel}
+          />
+          <StylePicker value={mapStyle} onChange={setMapStyle} />
 
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
@@ -175,11 +190,11 @@ export default function NamePage() {
                   }
                 }}
                 placeholder="e.g. Bryggen"
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-md text-ink placeholder:text-slate-400 focus:outline-none focus:border-bergen-500 focus:bg-white"
+                className="w-full px-3 py-2.5 bg-white/70 border border-slate-200 rounded-xl text-ink placeholder:text-slate-400 focus:outline-none focus:border-bergen-500 focus:bg-white transition-colors"
                 autoComplete="off"
               />
               {suggestions.length > 0 && (
-                <ul className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-md shadow-soft overflow-hidden z-10">
+                <ul className="absolute left-0 right-0 top-full mt-1 glass shadow-soft rounded-xl overflow-hidden z-10">
                   {suggestions.map((n) => (
                     <li key={n}>
                       <button
@@ -189,7 +204,7 @@ export default function NamePage() {
                           setText(n);
                           submit(n);
                         }}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-bergen-50"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-bergen-50/60 transition-colors"
                       >
                         {n}
                       </button>
@@ -203,10 +218,10 @@ export default function NamePage() {
           {phase === "revealed" && verdict && target && (
             <div
               className={
-                "rounded-md border p-3 " +
+                "rounded-xl border p-3 " +
                 (verdict.correct
                   ? "border-emerald-200 bg-emerald-50/40"
-                  : "border-slate-200 bg-slate-50")
+                  : "border-slate-200 bg-slate-50/60")
               }
             >
               <div className="text-sm text-slate-500">
@@ -227,13 +242,13 @@ export default function NamePage() {
                 <button
                   onClick={() => submit()}
                   disabled={!text.trim()}
-                  className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-md text-sm font-medium hover:bg-bergen-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-bergen-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 >
                   <Check size={16} /> Check
                 </button>
                 <button
                   onClick={reveal}
-                  className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300"
+                  className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300 bg-white/60 transition-all"
                   title="Reveal answer"
                 >
                   <Eye size={16} />
@@ -242,21 +257,21 @@ export default function NamePage() {
             ) : (
               <button
                 onClick={nextRound}
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-md text-sm font-medium hover:bg-bergen-700 transition-colors"
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-bergen-700 transition-all"
               >
                 Next street
               </button>
             )}
             <button
               onClick={skip}
-              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300 bg-white/60 transition-all"
               title="Skip"
             >
               <SkipForward size={16} />
             </button>
             <button
               onClick={reset}
-              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300 bg-white/60 transition-all"
               title="Reset score"
             >
               <RotateCcw size={16} />
@@ -272,6 +287,8 @@ export default function NamePage() {
           area={area}
           fitArea={area}
           zoomMode={zoom}
+          zoomLevel={zoomLevel}
+          mapStyle={mapStyle}
         />
       }
     />

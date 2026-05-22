@@ -22,6 +22,8 @@ const ENDPOINT = "https://overpass-api.de/api/interpreter";
 const STREET_QUERY = `[out:json][timeout:240];
 (
   way[highway][name](${BBOX.join(",")});
+  way[place~"^(square|locality)$"][name](${BBOX.join(",")});
+  way[area=yes][name][highway](${BBOX.join(",")});
 );
 out body;
 >;
@@ -63,30 +65,50 @@ async function overpass(query) {
   return res.json();
 }
 
+function normaliseKey(s) {
+  return s
+    .toLowerCase()
+    .replace(/[æ]/g, "ae")
+    .replace(/[ø]/g, "o")
+    .replace(/[å]/g, "a")
+    .replace(/['’`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function buildStreets(raw) {
   const nodes = new Map();
   for (const el of raw.elements) {
     if (el.type === "node") nodes.set(el.id, [el.lat, el.lon]);
   }
-  const byName = new Map();
+  // Dedupe by normalised name so casing/spacing variants merge into one
+  // logical street. Keep the most common surface name as the canonical
+  // label (first-seen wins, ties broken by length).
+  const byKey = new Map();
   for (const el of raw.elements) {
     if (el.type !== "way" || !el.tags?.name) continue;
     const name = el.tags.name;
+    const key = normaliseKey(name);
     const coords = (el.nodes || [])
       .map((id) => nodes.get(id))
       .filter(Boolean);
     if (coords.length < 2) continue;
     const seg = { id: el.id, coords };
-    if (!byName.has(name)) {
-      byName.set(name, {
+    if (!byKey.has(key)) {
+      byKey.set(key, {
         name,
-        highway: el.tags.highway,
+        highway: el.tags.highway || el.tags.place || "unclassified",
         oneway: el.tags.oneway === "yes",
         segments: [seg],
       });
     } else {
-      byName.get(name).segments.push(seg);
+      byKey.get(key).segments.push(seg);
     }
+  }
+  // Rebuild by canonical name for the JSON output.
+  const byName = new Map();
+  for (const s of byKey.values()) {
+    if (!byName.has(s.name)) byName.set(s.name, s);
   }
   // sort + compute centroid for each street
   const streets = [...byName.values()]
