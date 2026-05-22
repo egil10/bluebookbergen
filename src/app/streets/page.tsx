@@ -78,7 +78,7 @@ export default function StreetsPage() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 flex flex-col rounded-md border border-slate-200 bg-white overflow-hidden max-h-[50vh] md:max-h-none">
+          <div className="flex-1 min-h-0 flex flex-col rounded-md border border-slate-200 bg-white overflow-hidden">
             <ul className="flex-1 overflow-auto divide-y divide-slate-100">
               {filtered.map((s) => {
                 const isSel = s === selected;

@@ -97,7 +97,7 @@ export default function ExplorePage() {
               placeholder="Search this area…"
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-ink placeholder:text-slate-400 focus:outline-none focus:border-bergen-500 focus:bg-white text-sm"
             />
-            <ul className="mt-2 flex-1 min-h-0 max-h-[50vh] md:max-h-none overflow-auto rounded-md border border-slate-200 bg-white divide-y divide-slate-100">
+            <ul className="mt-2 flex-1 min-h-0 overflow-auto rounded-md border border-slate-200 bg-white divide-y divide-slate-100">
               {filtered.slice(0, 200).map((s) => {
                 const isSel = s === focus;
                 return (

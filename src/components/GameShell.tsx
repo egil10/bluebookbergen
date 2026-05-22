@@ -12,15 +12,14 @@ interface GameShellProps {
   loading?: boolean;
 }
 
-// Header is `h-14` (3.5rem). On md+ we lock the whole game view to the
-// viewport so the side panel's inner lists scroll on their own instead of
-// pushing the page taller. On mobile we keep the natural document flow
-// (header + stacked aside + map) but cap the scroll lists with viewport-
-// relative max-heights at the call site.
+// Header is `h-14` (3.5rem). The whole game view is locked to the
+// viewport so the side panel scrolls on its own instead of pushing the
+// document. On mobile the grid stacks: top row is the controls panel
+// (40dvh, internally scrollable), bottom row is the map.
 export function GameShell({ title, subtitle, side, map, status, loading }: GameShellProps) {
   return (
-    <div className="flex-1 flex flex-col md:h-[calc(100dvh-3.5rem)] md:overflow-hidden">
-      <div className="mx-auto max-w-6xl w-full px-5 py-5 flex items-baseline justify-between shrink-0">
+    <div className="flex-1 flex flex-col h-[calc(100dvh-3.5rem)] overflow-hidden">
+      <div className="mx-auto max-w-6xl w-full px-5 py-4 md:py-5 flex items-baseline justify-between shrink-0">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-ink">{title}</h1>
           {subtitle && (
@@ -29,11 +28,11 @@ export function GameShell({ title, subtitle, side, map, status, loading }: GameS
         </div>
         {status}
       </div>
-      <div className="mx-auto max-w-6xl w-full px-5 pb-5 md:pb-6 grid grid-cols-1 md:grid-cols-[360px_1fr] gap-5 flex-1 md:min-h-0">
-        <aside className="bg-white border border-slate-200 rounded-xl shadow-soft p-5 flex flex-col gap-4 min-h-[420px] md:min-h-0 md:overflow-hidden">
+      <div className="mx-auto max-w-6xl w-full px-5 pb-5 md:pb-6 grid grid-cols-1 md:grid-cols-[360px_1fr] grid-rows-[minmax(0,40dvh)_minmax(0,1fr)] md:grid-rows-1 gap-3 md:gap-5 flex-1 min-h-0">
+        <aside className="bg-white border border-slate-200 rounded-xl shadow-soft p-5 flex flex-col gap-4 min-h-0 overflow-y-auto">
           {side}
         </aside>
-        <section className="bg-white border border-slate-200 rounded-xl shadow-soft overflow-hidden relative min-h-[420px] md:min-h-0">
+        <section className="bg-white border border-slate-200 rounded-xl shadow-soft overflow-hidden relative min-h-0">
           {loading && (
             <div className="absolute inset-0 z-10 grid place-items-center bg-white/70">
               <Loader2 className="animate-spin text-bergen-600" />
