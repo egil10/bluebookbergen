@@ -13,7 +13,7 @@ import {
   fmtMetres,
   shuffle,
 } from "@/lib/geo";
-import { DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
+import { AREAS, DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
 import type { MapStyle, ZoomMode } from "@/components/Map";
 import type { BergenData, LatLng, Street } from "@/lib/types";
 
@@ -45,6 +45,21 @@ export default function LocatePage() {
       return streetInArea(s, area);
     });
   }, [data, area]);
+
+  const countsByArea = useMemo(() => {
+    if (!data) return {} as Record<string, number>;
+    const out: Record<string, number> = {};
+    for (const a of AREAS) {
+      let n = 0;
+      for (const s of data.streets) {
+        const pts = s.segments.reduce((m, seg) => m + seg.coords.length, 0);
+        if (pts < 3) continue;
+        if (streetInArea(s, a)) n++;
+      }
+      out[a.id] = n;
+    }
+    return out;
+  }, [data]);
 
   const deckRef = useRef<Street[]>([]);
   const cursorRef = useRef(0);
@@ -208,7 +223,12 @@ export default function LocatePage() {
       }
       settings={
         <>
-          <AreaPicker area={area} onChange={setArea} />
+          <AreaPicker
+            area={area}
+            onChange={setArea}
+            countFor={(a) => countsByArea[a.id] ?? 0}
+            minCount={1}
+          />
           <ZoomControl
             mode={zoom}
             onModeChange={setZoom}

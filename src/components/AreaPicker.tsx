@@ -8,16 +8,25 @@ interface AreaPickerProps {
   area: Area;
   onChange: (a: Area) => void;
   label?: string;
+  // Optional per-area count function. When provided, pills show "(N)" and
+  // pills with N < minCount are hidden entirely. Used by every game mode
+  // so empty/too-small areas disappear from the picker for that mode.
+  countFor?: (a: Area) => number;
+  minCount?: number;
 }
 
-export function AreaPicker({ area, onChange, label = "Play area" }: AreaPickerProps) {
+export function AreaPicker({
+  area,
+  onChange,
+  label = "Play area",
+  countFor,
+  minCount = 1,
+}: AreaPickerProps) {
   const all = AREAS.find((a) => a.group === "all");
   const bydeler = AREAS.filter((a) => a.group === "bydel");
   const subareas = AREAS.filter((a) => a.group === "sentrum");
 
-  // Brief "Applied" indicator so a click on a pill visibly confirms it
-  // landed — filters update live, but a moment of feedback removes any
-  // "did that take effect?" doubt.
+  // Brief "✓ applied" confirmation when the area changes.
   const [applied, setApplied] = useState(false);
   const firstRender = useRef(true);
   useEffect(() => {
@@ -29,6 +38,21 @@ export function AreaPicker({ area, onChange, label = "Play area" }: AreaPickerPr
     const t = window.setTimeout(() => setApplied(false), 1100);
     return () => window.clearTimeout(t);
   }, [area.id]);
+
+  const visible = (a: Area): boolean => {
+    if (!countFor) return true;
+    if (a.id === area.id) return true; // never hide the currently active pill
+    return countFor(a) >= minCount;
+  };
+  const renderCount = (a: Area) =>
+    countFor ? (
+      <span className="ml-1 opacity-60 tabular-nums">
+        {countFor(a)}
+      </span>
+    ) : null;
+
+  const visibleSubareas = subareas.filter(visible);
+  const visibleBydeler = bydeler.filter(visible);
 
   return (
     <div>
@@ -44,45 +68,52 @@ export function AreaPicker({ area, onChange, label = "Play area" }: AreaPickerPr
           <Check size={11} /> applied
         </span>
       </div>
-      {all && (
+      {all && visible(all) && (
         <div className="mt-2 flex flex-wrap gap-1.5">
           <Pill active={area.id === all.id} onClick={() => onChange(all)}>
             {all.name}
+            {renderCount(all)}
           </Pill>
         </div>
       )}
-      <div className="mt-2.5">
-        <div className="text-[10px] uppercase tracking-wider text-slate-300 mb-1">
-          Bydeler
+      {visibleBydeler.length > 0 && (
+        <div className="mt-2.5">
+          <div className="text-[10px] uppercase tracking-wider text-slate-300 mb-1">
+            Bydeler
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {visibleBydeler.map((a) => (
+              <Pill
+                key={a.id}
+                active={area.id === a.id}
+                onClick={() => onChange(a)}
+              >
+                {a.name}
+                {renderCount(a)}
+              </Pill>
+            ))}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {bydeler.map((a) => (
-            <Pill
-              key={a.id}
-              active={area.id === a.id}
-              onClick={() => onChange(a)}
-            >
-              {a.name}
-            </Pill>
-          ))}
+      )}
+      {visibleSubareas.length > 0 && (
+        <div className="mt-2.5">
+          <div className="text-[10px] uppercase tracking-wider text-slate-300 mb-1">
+            Sentrum sub-areas
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {visibleSubareas.map((a) => (
+              <Pill
+                key={a.id}
+                active={area.id === a.id}
+                onClick={() => onChange(a)}
+              >
+                {a.name}
+                {renderCount(a)}
+              </Pill>
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="mt-2.5">
-        <div className="text-[10px] uppercase tracking-wider text-slate-300 mb-1">
-          Sentrum sub-areas
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {subareas.map((a) => (
-            <Pill
-              key={a.id}
-              active={area.id === a.id}
-              onClick={() => onChange(a)}
-            >
-              {a.name}
-            </Pill>
-          ))}
-        </div>
-      </div>
+      )}
       <div className="text-xs text-slate-400 mt-2 leading-snug">
         {area.blurb}
       </div>

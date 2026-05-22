@@ -8,7 +8,7 @@ import { AreaPicker } from "@/components/AreaPicker";
 import { StylePicker, ZoomControl } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
 import { normaliseName, shuffle, similarity } from "@/lib/geo";
-import { DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
+import { AREAS, DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
 import type { MapStyle, ZoomMode } from "@/components/Map";
 import type { BergenData, Street } from "@/lib/types";
 
@@ -44,6 +44,21 @@ export default function NamePage() {
       return streetInArea(s, area);
     });
   }, [data, area]);
+
+  const countsByArea = useMemo(() => {
+    if (!data) return {} as Record<string, number>;
+    const out: Record<string, number> = {};
+    for (const a of AREAS) {
+      let n = 0;
+      for (const s of data.streets) {
+        const pts = s.segments.reduce((m, seg) => m + seg.coords.length, 0);
+        if (pts < 4) continue;
+        if (streetInArea(s, a)) n++;
+      }
+      out[a.id] = n;
+    }
+    return out;
+  }, [data]);
 
   const allNames = useMemo(
     () => (data?.streets ?? []).map((s) => s.name),
@@ -272,7 +287,12 @@ export default function NamePage() {
       }
       settings={
         <>
-          <AreaPicker area={area} onChange={setArea} />
+          <AreaPicker
+            area={area}
+            onChange={setArea}
+            countFor={(a) => countsByArea[a.id] ?? 0}
+            minCount={1}
+          />
           <ZoomControl
             mode={zoom}
             onModeChange={setZoom}

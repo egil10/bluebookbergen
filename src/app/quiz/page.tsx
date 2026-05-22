@@ -12,7 +12,7 @@ import {
 } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
 import { shuffle } from "@/lib/geo";
-import { DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
+import { AREAS, DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
 import type { MapStyle, ZoomMode } from "@/components/Map";
 import type { BergenData, Street } from "@/lib/types";
 
@@ -49,6 +49,23 @@ export default function QuizPage() {
       return streetInArea(s, area);
     });
   }, [data, area]);
+
+  // Per-area counts for the picker — used to hide areas that don't have
+  // enough streets to play a meaningful quiz round.
+  const countsByArea = useMemo(() => {
+    if (!data) return {} as Record<string, number>;
+    const out: Record<string, number> = {};
+    for (const a of AREAS) {
+      let n = 0;
+      for (const s of data.streets) {
+        const pts = s.segments.reduce((m, seg) => m + seg.coords.length, 0);
+        if (pts < 4) continue;
+        if (streetInArea(s, a)) n++;
+      }
+      out[a.id] = n;
+    }
+    return out;
+  }, [data]);
 
   const deckRef = useRef<Street[]>([]);
   const cursorRef = useRef(0);
@@ -237,7 +254,12 @@ export default function QuizPage() {
       }
       settings={
         <>
-          <AreaPicker area={area} onChange={setArea} />
+          <AreaPicker
+            area={area}
+            onChange={setArea}
+            countFor={(a) => countsByArea[a.id] ?? 0}
+            minCount={4}
+          />
           <ZoomControl
             mode={zoom}
             onModeChange={setZoom}

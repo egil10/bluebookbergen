@@ -16,7 +16,7 @@ import { AreaPicker } from "@/components/AreaPicker";
 import { StylePicker } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
 import { haversine, normaliseName } from "@/lib/geo";
-import { DEFAULT_AREA, poiInArea, type Area } from "@/lib/areas";
+import { AREAS, DEFAULT_AREA, poiInArea, type Area } from "@/lib/areas";
 import type { MapStyle } from "@/components/Map";
 import type { BergenData, LatLng, Poi } from "@/lib/types";
 
@@ -110,6 +110,15 @@ export default function RoutePage() {
     if (!data) return [] as Poi[];
     return data.pois.filter((p) => poiInArea(p, area));
   }, [data, area]);
+
+  const countsByArea = useMemo(() => {
+    if (!data) return {} as Record<string, number>;
+    const out: Record<string, number> = {};
+    for (const a of AREAS) {
+      out[a.id] = data.pois.filter((p) => poiInArea(p, a)).length;
+    }
+    return out;
+  }, [data]);
 
   const nextRound = useCallback(() => {
     if (!data) return;
@@ -411,7 +420,12 @@ export default function RoutePage() {
       }
       settings={
         <>
-          <AreaPicker area={area} onChange={setArea} />
+          <AreaPicker
+            area={area}
+            onChange={setArea}
+            countFor={(a) => countsByArea[a.id] ?? 0}
+            minCount={2}
+          />
           <StylePicker value={mapStyle} onChange={setMapStyle} />
         </>
       }

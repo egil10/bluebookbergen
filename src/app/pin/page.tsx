@@ -8,7 +8,7 @@ import { AreaPicker } from "@/components/AreaPicker";
 import { StylePicker, ZoomControl } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
 import { fmtMetres, haversine, shuffle } from "@/lib/geo";
-import { DEFAULT_AREA, poiInArea, type Area } from "@/lib/areas";
+import { AREAS, DEFAULT_AREA, poiInArea, type Area } from "@/lib/areas";
 import type { MapStyle, ZoomMode } from "@/components/Map";
 import type { BergenData, LatLng, Poi } from "@/lib/types";
 
@@ -42,6 +42,15 @@ export default function PinPage() {
     const pool = data.pois.filter((p) => poiInArea(p, area));
     return pool.length > 0 ? pool : data.pois;
   }, [data, area]);
+
+  const countsByArea = useMemo(() => {
+    if (!data) return {} as Record<string, number>;
+    const out: Record<string, number> = {};
+    for (const a of AREAS) {
+      out[a.id] = data.pois.filter((p) => poiInArea(p, a)).length;
+    }
+    return out;
+  }, [data]);
 
   const deckRef = useRef<Poi[]>([]);
   const cursorRef = useRef(0);
@@ -218,7 +227,12 @@ export default function PinPage() {
       }
       settings={
         <>
-          <AreaPicker area={area} onChange={setArea} />
+          <AreaPicker
+            area={area}
+            onChange={setArea}
+            countFor={(a) => countsByArea[a.id] ?? 0}
+            minCount={1}
+          />
           <ZoomControl
             mode={zoom}
             onModeChange={setZoom}
