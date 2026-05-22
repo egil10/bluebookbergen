@@ -46,6 +46,47 @@ export default function ExplorePage() {
       subtitle="Pan around, switch the basemap, click a name to fly to it."
       loading={!data}
       side={
+        <div className="flex flex-col min-h-0 flex-1">
+          <div className="flex items-center justify-between text-xs uppercase tracking-wider text-slate-400 font-medium mb-1.5">
+            <span className="inline-flex items-center gap-2">
+              <Compass size={12} /> Fly to a street
+            </span>
+            <span className="normal-case tracking-normal text-slate-400">
+              {filtered.length} of {inArea.length}
+            </span>
+          </div>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search this area…"
+            className="w-full px-3 py-2 bg-white/70 border border-slate-200 rounded-xl text-ink placeholder:text-slate-400 focus:outline-none focus:border-bergen-500 focus:bg-white text-sm transition-colors"
+          />
+          <ul className="mt-2 flex-1 min-h-0 overflow-auto thin-scrollbar rounded-xl border border-slate-200 bg-white/70 divide-y divide-slate-100">
+            {filtered.map((s) => {
+              const isSel = s === focus;
+              return (
+                <li key={s.name}>
+                  <button
+                    onClick={() => setFocus(s)}
+                    className={
+                      "w-full text-left px-3 py-1.5 text-sm transition-colors " +
+                      (isSel
+                        ? "bg-bergen-50 text-bergen-800"
+                        : "hover:bg-slate-50/70 text-slate-700")
+                    }
+                  >
+                    {s.name}
+                  </button>
+                </li>
+              );
+            })}
+            {filtered.length === 0 && (
+              <li className="px-3 py-2 text-sm text-slate-400">No matches.</li>
+            )}
+          </ul>
+        </div>
+      }
+      settings={
         <>
           <AreaPicker area={area} onChange={setArea} />
           <ZoomControl
@@ -55,46 +96,6 @@ export default function ExplorePage() {
             onLevelChange={setZoomLevel}
           />
           <StylePicker value={mapStyle} onChange={setMapStyle} />
-
-          <div className="flex flex-col min-h-0 flex-1">
-            <div className="flex items-center justify-between text-xs uppercase tracking-wider text-slate-400 font-medium mb-1.5">
-              <span className="inline-flex items-center gap-2">
-                <Compass size={12} /> Fly to a street
-              </span>
-              <span className="normal-case tracking-normal text-slate-400">
-                {filtered.length} of {inArea.length}
-              </span>
-            </div>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search this area…"
-              className="w-full px-3 py-2 bg-white/70 border border-slate-200 rounded-xl text-ink placeholder:text-slate-400 focus:outline-none focus:border-bergen-500 focus:bg-white text-sm transition-colors"
-            />
-            <ul className="mt-2 flex-1 min-h-0 overflow-auto thin-scrollbar rounded-xl border border-slate-200 bg-white/70 divide-y divide-slate-100">
-              {filtered.map((s) => {
-                const isSel = s === focus;
-                return (
-                  <li key={s.name}>
-                    <button
-                      onClick={() => setFocus(s)}
-                      className={
-                        "w-full text-left px-3 py-1.5 text-sm transition-colors " +
-                        (isSel
-                          ? "bg-bergen-50 text-bergen-800"
-                          : "hover:bg-slate-50/70 text-slate-700")
-                      }
-                    >
-                      {s.name}
-                    </button>
-                  </li>
-                );
-              })}
-              {filtered.length === 0 && (
-                <li className="px-3 py-2 text-sm text-slate-400">No matches.</li>
-              )}
-            </ul>
-          </div>
         </>
       }
       map={

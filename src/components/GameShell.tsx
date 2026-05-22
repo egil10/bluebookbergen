@@ -1,18 +1,27 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { ChevronDown, Loader2, Settings2 } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface GameShellProps {
   title: string;
   subtitle?: string;
-  side: ReactNode; // the prompt / controls column
+  side: ReactNode; // game-state content + action buttons
+  settings?: ReactNode; // configuration controls — collapsible at bottom
   map: ReactNode;
-  status?: ReactNode; // small inline status row (e.g. score breakdown)
+  status?: ReactNode;
   loading?: boolean;
 }
 
-export function GameShell({ title, subtitle, side, map, status, loading }: GameShellProps) {
+export function GameShell({
+  title,
+  subtitle,
+  side,
+  settings,
+  map,
+  status,
+  loading,
+}: GameShellProps) {
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden">
       <div className="mx-auto max-w-6xl w-full px-5 py-3 md:py-4 flex items-baseline justify-between shrink-0 gap-3 animate-fade-up">
@@ -27,6 +36,21 @@ export function GameShell({ title, subtitle, side, map, status, loading }: GameS
       <div className="mx-auto max-w-6xl w-full px-3 md:px-5 pb-4 md:pb-6 grid grid-cols-1 md:grid-cols-[360px_1fr] grid-rows-[minmax(0,40dvh)_minmax(0,1fr)] md:grid-rows-1 gap-3 md:gap-5 flex-1 min-h-0 animate-fade-up">
         <aside className="glass shadow-glass rounded-2xl p-5 flex flex-col gap-4 min-h-0 h-full overflow-y-auto thin-scrollbar">
           {side}
+          {settings && (
+            <details className="group mt-auto pt-3 border-t border-slate-200/70 -mx-1">
+              <summary className="cursor-pointer list-none flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium hover:text-slate-600 transition-colors px-1 py-0.5 rounded-md">
+                <Settings2 size={12} />
+                <span>Settings</span>
+                <ChevronDown
+                  size={12}
+                  className="ml-auto transition-transform group-open:rotate-180"
+                />
+              </summary>
+              <div className="mt-3 px-1 flex flex-col gap-4">
+                {settings}
+              </div>
+            </details>
+          )}
         </aside>
         <section className="glass shadow-glass rounded-2xl overflow-hidden relative min-h-0 h-full">
           {loading && (

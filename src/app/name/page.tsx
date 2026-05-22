@@ -163,15 +163,6 @@ export default function NamePage() {
       loading={!data}
       side={
         <>
-          <AreaPicker area={area} onChange={setArea} />
-          <ZoomControl
-            mode={zoom}
-            onModeChange={setZoom}
-            level={zoomLevel}
-            onLevelChange={setZoomLevel}
-          />
-          <StylePicker value={mapStyle} onChange={setMapStyle} />
-
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
               <Type size={12} />
@@ -236,7 +227,7 @@ export default function NamePage() {
             </div>
           )}
 
-          <div className="mt-auto flex gap-2">
+          <div className="flex gap-2">
             {phase === "guessing" ? (
               <>
                 <button
@@ -277,6 +268,18 @@ export default function NamePage() {
               <RotateCcw size={16} />
             </button>
           </div>
+        </>
+      }
+      settings={
+        <>
+          <AreaPicker area={area} onChange={setArea} />
+          <ZoomControl
+            mode={zoom}
+            onModeChange={setZoom}
+            level={zoomLevel}
+            onLevelChange={setZoomLevel}
+          />
+          <StylePicker value={mapStyle} onChange={setMapStyle} />
         </>
       }
       map={

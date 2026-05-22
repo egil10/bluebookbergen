@@ -234,8 +234,6 @@ export default function RoutePage() {
       loading={!data}
       side={
         <>
-          <AreaPicker area={area} onChange={setArea} />
-          <StylePicker value={mapStyle} onChange={setMapStyle} />
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
               <RouteIcon size={12} />
@@ -409,6 +407,12 @@ export default function RoutePage() {
               <RotateCcw size={16} />
             </button>
           </div>
+        </>
+      }
+      settings={
+        <>
+          <AreaPicker area={area} onChange={setArea} />
+          <StylePicker value={mapStyle} onChange={setMapStyle} />
         </>
       }
       map={

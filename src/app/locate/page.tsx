@@ -46,9 +46,6 @@ export default function LocatePage() {
     });
   }, [data, area]);
 
-  // A deck of all playable streets, drawn in shuffled order without
-  // repeats until the deck is exhausted. Reshuffles whenever the pool
-  // changes (area / data load).
   const deckRef = useRef<Street[]>([]);
   const cursorRef = useRef(0);
   const [remaining, setRemaining] = useState(0);
@@ -118,10 +115,7 @@ export default function LocatePage() {
   };
 
   const kpis = [
-    {
-      label: "pool",
-      value: `${remaining}/${playable.length}`,
-    },
+    { label: "pool", value: `${remaining}/${playable.length}` },
     {
       label: "avg off",
       value:
@@ -142,15 +136,6 @@ export default function LocatePage() {
       loading={!data}
       side={
         <>
-          <AreaPicker area={area} onChange={setArea} />
-          <ZoomControl
-            mode={zoom}
-            onModeChange={setZoom}
-            level={zoomLevel}
-            onLevelChange={setZoomLevel}
-          />
-          <StylePicker value={mapStyle} onChange={setMapStyle} />
-
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
               <Crosshair size={12} />
@@ -168,7 +153,7 @@ export default function LocatePage() {
           </div>
 
           {phase === "guessing" && (
-            <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
               {guess
                 ? "Marker placed. Hit Check answer when you're ready."
                 : "Click anywhere on the map to drop your guess."}
@@ -176,7 +161,7 @@ export default function LocatePage() {
           )}
 
           {phase === "revealed" && lastDistance !== null && lastPoints !== null && (
-            <div className="rounded-md border border-slate-200 p-3 bg-bergen-50/40">
+            <div className="rounded-xl border border-slate-200 p-3 bg-bergen-50/40">
               <div className="text-sm text-slate-500">You were off by</div>
               <div className="text-2xl font-semibold tracking-tight text-ink mt-0.5">
                 {fmtMetres(lastDistance)}
@@ -187,38 +172,50 @@ export default function LocatePage() {
             </div>
           )}
 
-          <div className="mt-auto flex gap-2">
+          <div className="flex gap-2">
             {phase === "guessing" ? (
               <button
                 onClick={submit}
                 disabled={!guess}
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-md text-sm font-medium hover:bg-bergen-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-bergen-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 <Check size={16} /> Check answer
               </button>
             ) : (
               <button
                 onClick={nextRound}
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-md text-sm font-medium hover:bg-bergen-700 transition-colors"
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-bergen-700 transition-all"
               >
                 Next street
               </button>
             )}
             <button
               onClick={skip}
-              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300 bg-white/60 transition-all"
               title="Skip"
             >
               <SkipForward size={16} />
             </button>
             <button
               onClick={reset}
-              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300 bg-white/60 transition-all"
               title="Reset score"
             >
               <RotateCcw size={16} />
             </button>
           </div>
+        </>
+      }
+      settings={
+        <>
+          <AreaPicker area={area} onChange={setArea} />
+          <ZoomControl
+            mode={zoom}
+            onModeChange={setZoom}
+            level={zoomLevel}
+            onLevelChange={setZoomLevel}
+          />
+          <StylePicker value={mapStyle} onChange={setMapStyle} />
         </>
       }
       map={

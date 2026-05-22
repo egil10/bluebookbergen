@@ -47,15 +47,6 @@ export default function StreetsPage() {
       loading={!data}
       side={
         <>
-          <AreaPicker area={area} onChange={setArea} />
-          <ZoomControl
-            mode={zoom}
-            onModeChange={setZoom}
-            level={zoomLevel}
-            onLevelChange={setZoomLevel}
-          />
-          <StylePicker value={mapStyle} onChange={setMapStyle} />
-
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
               <ListOrdered size={12} /> Street index
@@ -116,6 +107,18 @@ export default function StreetsPage() {
               )}
             </ul>
           </div>
+        </>
+      }
+      settings={
+        <>
+          <AreaPicker area={area} onChange={setArea} />
+          <ZoomControl
+            mode={zoom}
+            onModeChange={setZoom}
+            level={zoomLevel}
+            onLevelChange={setZoomLevel}
+          />
+          <StylePicker value={mapStyle} onChange={setMapStyle} />
         </>
       }
       map={

@@ -10,9 +10,6 @@ interface ZoomControlProps {
   onLevelChange: (n: number) => void;
 }
 
-// Single panel that owns both the mode and the slider. Auto re-fits to each
-// round; Fixed pans to the target's centre at the chosen zoom and holds
-// that zoom across rounds; Manual leaves the map entirely alone.
 export function ZoomControl({
   mode,
   onModeChange,
@@ -24,16 +21,16 @@ export function ZoomControl({
       <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
         <Maximize2 size={12} /> Zoom
       </div>
-      <div className="mt-2 inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5 text-xs">
-        <Chip active={mode === "auto"} onClick={() => onModeChange("auto")}>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        <Pill active={mode === "auto"} onClick={() => onModeChange("auto")}>
           Auto
-        </Chip>
-        <Chip active={mode === "fixed"} onClick={() => onModeChange("fixed")}>
+        </Pill>
+        <Pill active={mode === "fixed"} onClick={() => onModeChange("fixed")}>
           Fixed
-        </Chip>
-        <Chip active={mode === "manual"} onClick={() => onModeChange("manual")}>
+        </Pill>
+        <Pill active={mode === "manual"} onClick={() => onModeChange("manual")}>
           Manual
-        </Chip>
+        </Pill>
       </div>
       {mode === "fixed" && (
         <div className="mt-2.5 flex items-center gap-2">
@@ -63,7 +60,7 @@ export function ZoomControl({
 }
 
 interface AutoNextPickerProps {
-  value: number; // ms; 0 = off
+  value: number;
   onChange: (ms: number) => void;
 }
 
@@ -80,15 +77,15 @@ export function AutoNextPicker({ value, onChange }: AutoNextPickerProps) {
       <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
         <Timer size={12} /> Auto-next
       </div>
-      <div className="mt-2 inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5 text-xs">
+      <div className="mt-2 flex flex-wrap gap-1.5">
         {AUTO_NEXT_OPTIONS.map((o) => (
-          <Chip
+          <Pill
             key={o.v}
             active={value === o.v}
             onClick={() => onChange(o.v)}
           >
             {o.label}
-          </Chip>
+          </Pill>
         ))}
       </div>
     </div>
@@ -114,22 +111,22 @@ export function StylePicker({ value, onChange }: StylePickerProps) {
       <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
         <Layers size={12} /> Map style
       </div>
-      <div className="mt-2 inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5 text-xs flex-wrap">
+      <div className="mt-2 flex flex-wrap gap-1.5">
         {STYLE_OPTIONS.map((o) => (
-          <Chip
+          <Pill
             key={o.v}
             active={value === o.v}
             onClick={() => onChange(o.v)}
           >
             {o.label}
-          </Chip>
+          </Pill>
         ))}
       </div>
     </div>
   );
 }
 
-function Chip({
+function Pill({
   active,
   onClick,
   children,
@@ -143,10 +140,10 @@ function Chip({
       type="button"
       onClick={onClick}
       className={
-        "px-2.5 py-1 rounded transition-colors " +
+        "px-2.5 py-1 rounded-full text-xs border transition-colors whitespace-nowrap " +
         (active
-          ? "bg-white border border-slate-200 text-ink shadow-sm"
-          : "text-slate-500 hover:text-slate-700")
+          ? "bg-bergen-600 border-bergen-600 text-white font-medium shadow-sm"
+          : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-800")
       }
     >
       {children}

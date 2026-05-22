@@ -117,6 +117,14 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
 }
 
+/* Hide default <summary> markers so we can render our own chevron */
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
 /* Tiny utility */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }

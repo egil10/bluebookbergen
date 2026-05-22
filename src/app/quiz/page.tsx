@@ -132,14 +132,10 @@ export default function QuizPage() {
   };
 
   const kpis = [
-    {
-      label: "pool",
-      value: `${remaining}/${playable.length}`,
-    },
+    { label: "pool", value: `${remaining}/${playable.length}` },
     {
       label: "correct",
-      value:
-        scoredRounds > 0 ? `${correctCount}/${scoredRounds}` : "0/0",
+      value: scoredRounds > 0 ? `${correctCount}/${scoredRounds}` : "0/0",
     },
     { label: "streak", value: String(streak) },
     { label: "best", value: String(bestStreak) },
@@ -153,18 +149,6 @@ export default function QuizPage() {
       loading={!data}
       side={
         <>
-          <AreaPicker area={area} onChange={setArea} />
-          <ZoomControl
-            mode={zoom}
-            onModeChange={setZoom}
-            level={zoomLevel}
-            onLevelChange={setZoomLevel}
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <StylePicker value={mapStyle} onChange={setMapStyle} />
-            <AutoNextPicker value={autoNextMs} onChange={setAutoNextMs} />
-          </div>
-
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
               <ListChecks size={12} /> Which street is highlighted?
@@ -175,15 +159,15 @@ export default function QuizPage() {
                 const isWrongPick =
                   phase === "revealed" && s === picked && picked !== target;
                 const base =
-                  "w-full text-left px-3 py-2.5 rounded-md text-sm border transition-colors";
+                  "w-full text-left px-3 py-2.5 rounded-xl text-sm border transition-all";
                 let tone =
-                  "border-slate-200 bg-slate-50 hover:border-bergen-300 hover:bg-white text-ink";
+                  "border-slate-200 bg-white/60 hover:border-bergen-300 hover:bg-white hover:shadow-sm text-ink";
                 if (isCorrect) {
                   tone = "border-emerald-300 bg-emerald-50 text-emerald-800";
                 } else if (isWrongPick) {
                   tone = "border-rose-300 bg-rose-50 text-rose-800";
                 } else if (phase === "revealed") {
-                  tone = "border-slate-200 bg-white text-slate-500";
+                  tone = "border-slate-200 bg-white/60 text-slate-500";
                 }
                 return (
                   <button
@@ -198,7 +182,8 @@ export default function QuizPage() {
               })}
               {options.length === 0 && (
                 <div className="text-sm text-slate-400">
-                  Not enough streets in this area — pick a wider one.
+                  Not enough streets in this area — open Settings and pick a
+                  wider area.
                 </div>
               )}
             </div>
@@ -207,10 +192,10 @@ export default function QuizPage() {
           {phase === "revealed" && target && (
             <div
               className={
-                "rounded-md border p-3 " +
+                "rounded-xl border p-3 " +
                 (picked === target
                   ? "border-emerald-200 bg-emerald-50/40"
-                  : "border-slate-200 bg-slate-50")
+                  : "border-slate-200 bg-slate-50/60")
               }
             >
               <div className="text-sm text-slate-500">
@@ -225,29 +210,42 @@ export default function QuizPage() {
             </div>
           )}
 
-          <div className="mt-auto flex gap-2">
+          <div className="flex gap-2">
             <button
               onClick={nextRound}
               disabled={phase !== "revealed"}
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-md text-sm font-medium hover:bg-bergen-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-bergen-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               Next street
             </button>
             <button
               onClick={skip}
-              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300 bg-white/60 transition-all"
               title="Skip"
             >
               <SkipForward size={16} />
             </button>
             <button
               onClick={reset}
-              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300 bg-white/60 transition-all"
               title="Reset score"
             >
               <RotateCcw size={16} />
             </button>
           </div>
+        </>
+      }
+      settings={
+        <>
+          <AreaPicker area={area} onChange={setArea} />
+          <ZoomControl
+            mode={zoom}
+            onModeChange={setZoom}
+            level={zoomLevel}
+            onLevelChange={setZoomLevel}
+          />
+          <StylePicker value={mapStyle} onChange={setMapStyle} />
+          <AutoNextPicker value={autoNextMs} onChange={setAutoNextMs} />
         </>
       }
       map={
