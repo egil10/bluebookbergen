@@ -185,7 +185,7 @@ export default function BergenMap({
         scrollWheelZoom
         zoomControl
         className="h-full w-full"
-        minZoom={11}
+        minZoom={7}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; &copy; <a href="https://carto.com/attributions">CARTO</a>'

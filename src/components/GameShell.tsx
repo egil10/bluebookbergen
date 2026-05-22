@@ -12,13 +12,12 @@ interface GameShellProps {
   loading?: boolean;
 }
 
-// Header is `h-14` (3.5rem). The whole game view is locked to the
-// viewport so the side panel scrolls on its own instead of pushing the
-// document. On mobile the grid stacks: top row is the controls panel
-// (40dvh, internally scrollable), bottom row is the map.
+// The body is locked to the viewport (see layout.tsx). GameShell takes the
+// full remaining height inside <main> and never scrolls itself — the
+// side panel scrolls internally, the map fills its own column.
 export function GameShell({ title, subtitle, side, map, status, loading }: GameShellProps) {
   return (
-    <div className="flex-1 flex flex-col h-[calc(100dvh-3.5rem)] overflow-hidden">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
       <div className="mx-auto max-w-6xl w-full px-5 py-4 md:py-5 flex items-baseline justify-between shrink-0">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-ink">{title}</h1>
@@ -29,10 +28,10 @@ export function GameShell({ title, subtitle, side, map, status, loading }: GameS
         {status}
       </div>
       <div className="mx-auto max-w-6xl w-full px-5 pb-5 md:pb-6 grid grid-cols-1 md:grid-cols-[360px_1fr] grid-rows-[minmax(0,40dvh)_minmax(0,1fr)] md:grid-rows-1 gap-3 md:gap-5 flex-1 min-h-0">
-        <aside className="bg-white border border-slate-200 rounded-xl shadow-soft p-5 flex flex-col gap-4 min-h-0 overflow-y-auto">
+        <aside className="bg-white border border-slate-200 rounded-xl shadow-soft p-5 flex flex-col gap-4 min-h-0 h-full overflow-y-auto">
           {side}
         </aside>
-        <section className="bg-white border border-slate-200 rounded-xl shadow-soft overflow-hidden relative min-h-0">
+        <section className="bg-white border border-slate-200 rounded-xl shadow-soft overflow-hidden relative min-h-0 h-full">
           {loading && (
             <div className="absolute inset-0 z-10 grid place-items-center bg-white/70">
               <Loader2 className="animate-spin text-bergen-600" />
