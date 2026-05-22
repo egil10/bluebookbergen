@@ -250,6 +250,7 @@ export default function LocatePage() {
           zoomMode={zoom}
           zoomLevel={zoomLevel}
           mapStyle={mapStyle}
+          hideLabels={phase === "guessing"}
         />
       }
     />

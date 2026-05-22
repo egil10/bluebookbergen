@@ -312,6 +312,7 @@ export default function NamePage() {
           zoomMode={zoom}
           zoomLevel={zoomLevel}
           mapStyle={mapStyle}
+          hideLabels={phase === "guessing"}
         />
       }
     />

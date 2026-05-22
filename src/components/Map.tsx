@@ -26,6 +26,11 @@ export type MapStyle = "light" | "minimal" | "voyager" | "osm" | "satellite";
 
 interface TileStyle {
   url: string;
+  // No-labels variant of the same style. Used when `hideLabels` is true
+  // (game modes where the answer is the street name). Optional —
+  // satellite has no labels in either case; OSM has no clean no-labels
+  // variant, so it falls back to CARTO light_nolabels.
+  urlNoLabels?: string;
   attribution: string;
   maxZoom: number;
   // When true, polyline/label colours should switch to high-contrast
@@ -33,33 +38,42 @@ interface TileStyle {
   dark?: boolean;
 }
 
+const CARTO_NOLABELS = "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png";
+
 export const TILE_STYLES: Record<MapStyle, TileStyle> = {
   light: {
     url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    urlNoLabels: CARTO_NOLABELS,
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; &copy; <a href="https://carto.com/attributions">CARTO</a>',
     maxZoom: 19,
   },
   minimal: {
-    url: "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png",
+    url: CARTO_NOLABELS,
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; &copy; <a href="https://carto.com/attributions">CARTO</a>',
     maxZoom: 19,
   },
   voyager: {
     url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    urlNoLabels:
+      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png",
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; &copy; <a href="https://carto.com/attributions">CARTO</a>',
     maxZoom: 19,
   },
   osm: {
     url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    // OSM standard has no no-labels variant; fall back to CARTO minimal
+    // so we never leak names during a game.
+    urlNoLabels: CARTO_NOLABELS,
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19,
   },
   satellite: {
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    // Esri imagery has no labels baked in.
     attribution:
       'Imagery &copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics',
     maxZoom: 19,
@@ -87,6 +101,9 @@ export interface BergenMapProps {
   zoomMode?: ZoomMode;
   zoomLevel?: number; // used when zoomMode === "fixed"
   mapStyle?: MapStyle;
+  // Force a no-labels tile variant regardless of the chosen style. Set
+  // by game modes so the basemap can't spoil the street name.
+  hideLabels?: boolean;
 }
 
 const FitBounds = ({ street }: { street: Street | null | undefined }) => {
@@ -240,8 +257,10 @@ export default function BergenMap({
   zoomMode = "auto",
   zoomLevel = 14,
   mapStyle = "light",
+  hideLabels = false,
 }: BergenMapProps) {
   const tiles = TILE_STYLES[mapStyle];
+  const tileUrl = hideLabels && tiles.urlNoLabels ? tiles.urlNoLabels : tiles.url;
   const dark = tiles.dark;
   const highlightColour = dark ? "#fde047" : "#3d6798";
   const hintColour = dark ? "#cbd5e1" : "#94a3b8";
@@ -257,9 +276,9 @@ export default function BergenMap({
         minZoom={7}
       >
         <TileLayer
-          key={mapStyle}
+          key={`${mapStyle}-${hideLabels ? "nolabels" : "labels"}`}
           attribution={tiles.attribution}
-          url={tiles.url}
+          url={tileUrl}
           maxZoom={tiles.maxZoom}
         />
         <ClickHandler onClick={onMapClick} />

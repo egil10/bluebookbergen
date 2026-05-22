@@ -255,6 +255,7 @@ export default function PinPage() {
           zoomMode={zoom}
           zoomLevel={zoomLevel}
           mapStyle={mapStyle}
+          hideLabels={phase === "guessing"}
         />
       }
     />

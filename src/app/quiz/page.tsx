@@ -280,6 +280,7 @@ export default function QuizPage() {
           zoomMode={zoom}
           zoomLevel={zoomLevel}
           mapStyle={mapStyle}
+          hideLabels={phase === "guessing"}
         />
       }
     />
