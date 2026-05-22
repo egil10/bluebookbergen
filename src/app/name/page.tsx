@@ -19,7 +19,7 @@ export default function NamePage() {
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
   const [zoom, setZoom] = useState<ZoomMode>("fixed");
   const [zoomLevel, setZoomLevel] = useState(14);
-  const [mapStyle, setMapStyle] = useState<MapStyle>("light");
+  const [mapStyle, setMapStyle] = useState<MapStyle>("minimal");
   const [target, setTarget] = useState<Street | null>(null);
   const [text, setText] = useState("");
   const [phase, setPhase] = useState<Phase>("guessing");
@@ -206,27 +206,6 @@ export default function NamePage() {
             </div>
           </div>
 
-          {phase === "revealed" && verdict && target && (
-            <div
-              className={
-                "rounded-xl border p-3 " +
-                (verdict.correct
-                  ? "border-emerald-200 bg-emerald-50/40"
-                  : "border-slate-200 bg-slate-50/60")
-              }
-            >
-              <div className="text-sm text-slate-500">
-                {verdict.correct ? "Spot on" : "The answer was"}
-              </div>
-              <div className="text-2xl font-semibold tracking-tight text-ink mt-0.5">
-                {target.name}
-              </div>
-              <div className="text-sm text-slate-500 mt-2">
-                +{verdict.points} pts · match {(verdict.similarity * 100).toFixed(0)}%
-              </div>
-            </div>
-          )}
-
           <div className="flex gap-2">
             {phase === "guessing" ? (
               <>
@@ -268,6 +247,27 @@ export default function NamePage() {
               <RotateCcw size={16} />
             </button>
           </div>
+
+          {phase === "revealed" && verdict && target && (
+            <div
+              className={
+                "rounded-xl border p-3 animate-fade-up " +
+                (verdict.correct
+                  ? "border-emerald-200 bg-emerald-50/40"
+                  : "border-slate-200 bg-slate-50/60")
+              }
+            >
+              <div className="text-sm text-slate-500">
+                {verdict.correct ? "Spot on" : "The answer was"}
+              </div>
+              <div className="text-2xl font-semibold tracking-tight text-ink mt-0.5">
+                {target.name}
+              </div>
+              <div className="text-sm text-slate-500 mt-2">
+                +{verdict.points} pts · match {(verdict.similarity * 100).toFixed(0)}%
+              </div>
+            </div>
+          )}
         </>
       }
       settings={

@@ -25,6 +25,12 @@ export default function StreetsPage() {
     loadBergen().then(setData);
   }, []);
 
+  // Clear selected when area changes — otherwise the map keeps highlighting
+  // a street that's no longer in the active filter.
+  useEffect(() => {
+    setSelected(null);
+  }, [area]);
+
   const inArea = useMemo(() => {
     if (!data) return [] as Street[];
     return data.streets.filter((s) => streetInArea(s, area));

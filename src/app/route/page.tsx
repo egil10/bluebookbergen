@@ -421,6 +421,7 @@ export default function RoutePage() {
           extraMarkers={extraMarkers}
           fitTarget={routeAsStreet}
           area={area}
+          fitArea={routeAsStreet ? null : area}
           mapStyle={mapStyle}
         />
       }

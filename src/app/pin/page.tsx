@@ -25,7 +25,7 @@ export default function PinPage() {
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
   const [zoom, setZoom] = useState<ZoomMode>("fixed");
   const [zoomLevel, setZoomLevel] = useState(14);
-  const [mapStyle, setMapStyle] = useState<MapStyle>("light");
+  const [mapStyle, setMapStyle] = useState<MapStyle>("minimal");
   const [target, setTarget] = useState<Poi | null>(null);
   const [guess, setGuess] = useState<LatLng | null>(null);
   const [phase, setPhase] = useState<Phase>("guessing");
@@ -162,26 +162,6 @@ export default function PinPage() {
             )}
           </div>
 
-          {phase === "guessing" && (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
-              {guess
-                ? "Pin placed. Hit Check answer when you're ready."
-                : "Click the map to drop your pin on the exact spot."}
-            </div>
-          )}
-
-          {phase === "revealed" && last && (
-            <div className="rounded-xl border border-slate-200 p-3 bg-bergen-50/40">
-              <div className="text-sm text-slate-500">You were off by</div>
-              <div className="text-2xl font-semibold tracking-tight text-ink mt-0.5">
-                {fmtMetres(last.distance)}
-              </div>
-              <div className="text-sm text-slate-500 mt-2">
-                +{last.points} pts this round
-              </div>
-            </div>
-          )}
-
           <div className="flex gap-2">
             {phase === "guessing" ? (
               <button
@@ -214,6 +194,26 @@ export default function PinPage() {
               <RotateCcw size={16} />
             </button>
           </div>
+
+          {phase === "guessing" && (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
+              {guess
+                ? "Pin placed. Hit Check answer when you're ready."
+                : "Click the map to drop your pin on the exact spot."}
+            </div>
+          )}
+
+          {phase === "revealed" && last && (
+            <div className="rounded-xl border border-slate-200 p-3 bg-bergen-50/40 animate-fade-up">
+              <div className="text-sm text-slate-500">You were off by</div>
+              <div className="text-2xl font-semibold tracking-tight text-ink mt-0.5">
+                {fmtMetres(last.distance)}
+              </div>
+              <div className="text-sm text-slate-500 mt-2">
+                +{last.points} pts this round
+              </div>
+            </div>
+          )}
         </>
       }
       settings={
@@ -235,7 +235,9 @@ export default function PinPage() {
           onMapClick={(p) => phase === "guessing" && setGuess(p)}
           area={area}
           fitArea={area}
-          fitTarget={targetAsStreet}
+          // CRUCIAL: never frame the target during guessing — that would
+          // pan/zoom directly to the answer. Only re-frame on reveal.
+          fitTarget={phase === "revealed" ? targetAsStreet : null}
           zoomMode={zoom}
           zoomLevel={zoomLevel}
           mapStyle={mapStyle}

@@ -28,7 +28,7 @@ export default function QuizPage() {
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
   const [zoom, setZoom] = useState<ZoomMode>("fixed");
   const [zoomLevel, setZoomLevel] = useState(14);
-  const [mapStyle, setMapStyle] = useState<MapStyle>("light");
+  const [mapStyle, setMapStyle] = useState<MapStyle>("minimal");
   const [autoNextMs, setAutoNextMs] = useState(0);
   const [target, setTarget] = useState<Street | null>(null);
   const [options, setOptions] = useState<Street[]>([]);
@@ -189,27 +189,6 @@ export default function QuizPage() {
             </div>
           </div>
 
-          {phase === "revealed" && target && (
-            <div
-              className={
-                "rounded-xl border p-3 " +
-                (picked === target
-                  ? "border-emerald-200 bg-emerald-50/40"
-                  : "border-slate-200 bg-slate-50/60")
-              }
-            >
-              <div className="text-sm text-slate-500">
-                {picked === target ? "Correct" : "Answer"}
-              </div>
-              <div className="text-2xl font-semibold tracking-tight text-ink mt-0.5">
-                {target.name}
-              </div>
-              <div className="text-sm text-slate-500 mt-1">
-                +{picked === target ? 100 : 0} pts
-              </div>
-            </div>
-          )}
-
           <div className="flex gap-2">
             <button
               onClick={nextRound}
@@ -233,6 +212,27 @@ export default function QuizPage() {
               <RotateCcw size={16} />
             </button>
           </div>
+
+          {phase === "revealed" && target && (
+            <div
+              className={
+                "rounded-xl border p-3 animate-fade-up " +
+                (picked === target
+                  ? "border-emerald-200 bg-emerald-50/40"
+                  : "border-slate-200 bg-slate-50/60")
+              }
+            >
+              <div className="text-sm text-slate-500">
+                {picked === target ? "Correct" : "Answer"}
+              </div>
+              <div className="text-2xl font-semibold tracking-tight text-ink mt-0.5">
+                {target.name}
+              </div>
+              <div className="text-sm text-slate-500 mt-1">
+                +{picked === target ? 100 : 0} pts
+              </div>
+            </div>
+          )}
         </>
       }
       settings={

@@ -1,6 +1,7 @@
 "use client";
 
-import { MapPinned } from "lucide-react";
+import { Check, MapPinned } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { AREAS, type Area } from "@/lib/areas";
 
 interface AreaPickerProps {
@@ -14,10 +15,34 @@ export function AreaPicker({ area, onChange, label = "Play area" }: AreaPickerPr
   const bydeler = AREAS.filter((a) => a.group === "bydel");
   const subareas = AREAS.filter((a) => a.group === "sentrum");
 
+  // Brief "Applied" indicator so a click on a pill visibly confirms it
+  // landed — filters update live, but a moment of feedback removes any
+  // "did that take effect?" doubt.
+  const [applied, setApplied] = useState(false);
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    setApplied(true);
+    const t = window.setTimeout(() => setApplied(false), 1100);
+    return () => window.clearTimeout(t);
+  }, [area.id]);
+
   return (
     <div>
       <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
         <MapPinned size={12} /> {label}
+        <span
+          className={
+            "ml-auto inline-flex items-center gap-1 text-[10px] normal-case tracking-normal text-emerald-600 transition-opacity " +
+            (applied ? "opacity-100" : "opacity-0")
+          }
+          aria-live="polite"
+        >
+          <Check size={11} /> applied
+        </span>
       </div>
       {all && (
         <div className="mt-2 flex flex-wrap gap-1.5">
