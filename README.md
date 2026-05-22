@@ -24,8 +24,12 @@ Møhlenpris, or the whole bbox.
 - React-Leaflet on CARTO Light tiles, OpenStreetMap data
 - `lucide-react` icons
 - Street data fetched once from the OpenStreetMap Overpass API and shipped
-  as a static JSON file in `public/data/bergen.json` (~770 KB, 648 streets
-  + 148 POIs).
+  as a static JSON file in `public/data/bergen.json` (~8.7 MB, ~3,200
+  streets, ~430 POIs) covering the entire kommune.
+- Official kommune street register parsed from `data/raw/gatetab.xls`
+  into `public/data/bergen-gatetab.json` (1,935 streets with bydel).
+  Used at load time to tag each OSM street with its bydel so the
+  area filter is bydel-accurate.
 
 No API key required.
 
@@ -36,10 +40,11 @@ npm install
 npm run dev     # http://localhost:3000
 ```
 
-To refresh the dataset:
+To refresh the datasets:
 
 ```bash
-npm run fetch-data
+npm run fetch-data       # OSM streets + POIs via Overpass
+npm run parse-gatetab    # kommune gatetabell from data/raw/gatetab.xls
 ```
 
 ## Deploy to Vercel
@@ -54,8 +59,12 @@ needed.
 ## Data
 
 - Streets and POIs are fetched from
-  [Overpass](https://overpass-api.de/) inside a Bergen Sentrum bounding
-  box. Adjust `BBOX` in `scripts/fetch-bergen-data.mjs` to widen coverage.
+  [Overpass](https://overpass-api.de/) inside a bounding box that covers
+  the whole Bergen kommune. Adjust `BBOX` in
+  `scripts/fetch-bergen-data.mjs` to broaden or narrow it.
+- The kommune gatetabell lives in `data/raw/gatetab.xls`; `parse-gatetab`
+  produces `public/data/bergen-gatetab.json` which the app merges into
+  the OSM data at load time so each street carries its official bydel.
 - Routes are computed live by the public OSRM demo server
   (`router.project-osrm.org`), which is fine for a hobby app but not
   rate-limit guaranteed.

@@ -5,14 +5,17 @@ import { Search, ListOrdered, X } from "lucide-react";
 import { GameShell } from "@/components/GameShell";
 import BergenMap from "@/components/MapClient";
 import { AreaPicker } from "@/components/AreaPicker";
+import { ZoomToggle } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
 import { normaliseName } from "@/lib/geo";
-import { DEFAULT_AREA, isInArea, type Area } from "@/lib/areas";
+import { DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
+import type { ZoomMode } from "@/components/Map";
 import type { BergenData, Street } from "@/lib/types";
 
 export default function StreetsPage() {
   const [data, setData] = useState<BergenData | null>(null);
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
+  const [zoom, setZoom] = useState<ZoomMode>("auto");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Street | null>(null);
 
@@ -22,7 +25,7 @@ export default function StreetsPage() {
 
   const inArea = useMemo(() => {
     if (!data) return [] as Street[];
-    return data.streets.filter((s) => isInArea(s.center, area));
+    return data.streets.filter((s) => streetInArea(s, area));
   }, [data, area]);
 
   const filtered = useMemo(() => {
@@ -43,6 +46,7 @@ export default function StreetsPage() {
       side={
         <>
           <AreaPicker area={area} onChange={setArea} />
+          <ZoomToggle value={zoom} onChange={setZoom} />
 
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
@@ -74,7 +78,7 @@ export default function StreetsPage() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 flex flex-col rounded-md border border-slate-200 bg-white overflow-hidden">
+          <div className="flex-1 min-h-0 flex flex-col rounded-md border border-slate-200 bg-white overflow-hidden max-h-[50vh] md:max-h-none">
             <ul className="flex-1 overflow-auto divide-y divide-slate-100">
               {filtered.map((s) => {
                 const isSel = s === selected;
@@ -113,6 +117,7 @@ export default function StreetsPage() {
           showStreetLabel={!!selected}
           area={area}
           fitArea={selected ? null : area}
+          zoomMode={zoom}
         />
       }
     />

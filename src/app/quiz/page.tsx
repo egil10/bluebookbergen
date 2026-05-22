@@ -5,8 +5,10 @@ import { ListChecks, SkipForward, RotateCcw } from "lucide-react";
 import { GameShell, ScoreBadge } from "@/components/GameShell";
 import BergenMap from "@/components/MapClient";
 import { AreaPicker } from "@/components/AreaPicker";
+import { AutoNextPicker, ZoomToggle } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
-import { DEFAULT_AREA, isInArea, type Area } from "@/lib/areas";
+import { DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
+import type { ZoomMode } from "@/components/Map";
 import type { BergenData, Street } from "@/lib/types";
 
 type Phase = "guessing" | "revealed";
@@ -32,19 +34,25 @@ function shuffle<T>(arr: T[]): T[] {
 export default function QuizPage() {
   const [data, setData] = useState<BergenData | null>(null);
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
+  const [zoom, setZoom] = useState<ZoomMode>("auto");
+  const [autoNextMs, setAutoNextMs] = useState(0);
   const [target, setTarget] = useState<Street | null>(null);
   const [options, setOptions] = useState<Street[]>([]);
   const [picked, setPicked] = useState<Street | null>(null);
   const [phase, setPhase] = useState<Phase>("guessing");
   const [score, setScore] = useState(0);
   const [rounds, setRounds] = useState(0);
+  const [scoredRounds, setScoredRounds] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
 
   const playable = useMemo(() => {
     if (!data) return [] as Street[];
     return data.streets.filter((s) => {
       const totalPts = s.segments.reduce((n, seg) => n + seg.coords.length, 0);
       if (totalPts < 4) return false;
-      return isInArea(s.center, area);
+      return streetInArea(s, area);
     });
   }, [data, area]);
 
@@ -71,35 +79,78 @@ export default function QuizPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, area]);
 
+  useEffect(() => {
+    if (phase !== "revealed" || autoNextMs <= 0) return;
+    const t = window.setTimeout(() => nextRound(), autoNextMs);
+    return () => window.clearTimeout(t);
+  }, [phase, autoNextMs, nextRound]);
+
   const choose = (s: Street) => {
     if (phase !== "guessing" || !target) return;
     setPicked(s);
     const correct = s === target;
     setScore((sc) => sc + (correct ? 100 : 0));
     setRounds((r) => r + 1);
+    setScoredRounds((n) => n + 1);
+    if (correct) {
+      setCorrectCount((n) => n + 1);
+      setStreak((s2) => {
+        const next = s2 + 1;
+        setBestStreak((b) => Math.max(b, next));
+        return next;
+      });
+    } else {
+      setStreak(0);
+    }
     setPhase("revealed");
   };
 
   const skip = () => {
     setRounds((r) => r + 1);
+    setStreak(0);
     nextRound();
   };
 
   const reset = () => {
     setScore(0);
     setRounds(0);
+    setScoredRounds(0);
+    setCorrectCount(0);
+    setStreak(0);
+    setBestStreak(0);
     nextRound();
   };
+
+  const kpis = [
+    {
+      label: "correct",
+      value:
+        scoredRounds > 0 ? `${correctCount}/${scoredRounds}` : "0/0",
+    },
+    {
+      label: "accuracy",
+      value:
+        scoredRounds > 0
+          ? `${Math.round((correctCount / scoredRounds) * 100)}%`
+          : "—",
+    },
+    { label: "streak", value: String(streak) },
+    { label: "best", value: String(bestStreak) },
+  ];
 
   return (
     <GameShell
       title="Multiple choice"
       subtitle="One street is highlighted. Pick its name from four options."
-      status={<ScoreBadge score={score} rounds={rounds} />}
+      status={<ScoreBadge score={score} rounds={rounds} extras={kpis} />}
       loading={!data}
       side={
         <>
           <AreaPicker area={area} onChange={setArea} />
+          <div className="grid grid-cols-2 gap-3">
+            <ZoomToggle value={zoom} onChange={setZoom} />
+            <AutoNextPicker value={autoNextMs} onChange={setAutoNextMs} />
+          </div>
 
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
@@ -192,6 +243,8 @@ export default function QuizPage() {
           fitTarget={target}
           showStreetLabel={phase === "revealed"}
           area={area}
+          fitArea={area}
+          zoomMode={zoom}
         />
       }
     />

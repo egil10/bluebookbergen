@@ -70,12 +70,13 @@ export default function Home() {
           The Knowledge · Bergen edition
         </p>
         <h1 className="mt-3 text-4xl md:text-5xl font-semibold tracking-tight text-ink leading-[1.05]">
-          Learn every street in Bergen Sentrum.
+          Learn every street in Bergen.
         </h1>
         <p className="mt-5 text-slate-600 text-lg leading-relaxed">
-          A practice ground inspired by the London cab drivers&apos; Knowledge. Endless
-          rounds, an interactive map, and 648 named streets pulled straight from
-          OpenStreetMap — filterable by neighbourhood.
+          A practice ground inspired by the London cab drivers&apos; Knowledge.
+          Over 3,200 streets pulled from OpenStreetMap, cross-checked against
+          the kommune&apos;s 1,935-street gatetabell, and filterable by every
+          one of the eight Bergen bydeler.
         </p>
         <div className="mt-7 flex gap-3 flex-wrap">
           <Link

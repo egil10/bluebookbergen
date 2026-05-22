@@ -12,12 +12,14 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = resolve(__dirname, "..", "public", "data", "bergen.json");
 
-// south, west, north, east
-const BBOX = [60.370, 5.290, 60.410, 5.360];
+// south, west, north, east. Covers all eight Bergen kommune bydeler:
+// Bergenhus, Årstad, Laksevåg, Fyllingsdalen, Ytrebygda, Fana, Arna,
+// Åsane. Yields ~1900 streets, ~750 POIs.
+const BBOX = [60.180, 5.050, 60.560, 5.550];
 
 const ENDPOINT = "https://overpass-api.de/api/interpreter";
 
-const STREET_QUERY = `[out:json][timeout:90];
+const STREET_QUERY = `[out:json][timeout:240];
 (
   way[highway][name](${BBOX.join(",")});
 );
@@ -25,16 +27,31 @@ out body;
 >;
 out skel qt;`;
 
-const POI_QUERY = `[out:json][timeout:60];
+function poiQuery(box) {
+  const b = box.join(",");
+  return `[out:json][timeout:90];
 (
-  node[amenity~"^(university|college|hospital|theatre|townhall|library|cinema|police|fire_station|place_of_worship)$"][name](${BBOX.join(",")});
-  node[tourism~"^(museum|attraction|viewpoint|gallery|hotel)$"][name](${BBOX.join(",")});
-  node[railway~"^(station|tram_stop)$"][name](${BBOX.join(",")});
-  node[public_transport=station][name](${BBOX.join(",")});
-  node[amenity=bus_station][name](${BBOX.join(",")});
-  node[place~"^(square|neighbourhood|suburb)$"][name](${BBOX.join(",")});
+  node[amenity~"^(university|college|hospital|theatre|townhall|library|cinema|police|fire_station|place_of_worship)$"][name](${b});
+  node[tourism~"^(museum|attraction|viewpoint|gallery|hotel)$"][name](${b});
+  node[railway~"^(station|tram_stop)$"][name](${b});
+  node[public_transport=station][name](${b});
+  node[amenity=bus_station][name](${b});
+  node[place~"^(square|neighbourhood|suburb)$"][name](${b});
 );
 out body;`;
+}
+
+function splitBbox(box) {
+  const [s, w, n, e] = box;
+  const midLat = (s + n) / 2;
+  const midLon = (w + e) / 2;
+  return [
+    [s, w, midLat, midLon],
+    [s, midLon, midLat, e],
+    [midLat, w, n, midLon],
+    [midLat, midLon, n, e],
+  ];
+}
 
 async function overpass(query) {
   const url = `${ENDPOINT}?data=${encodeURIComponent(query)}`;
@@ -111,9 +128,25 @@ async function main() {
   const streets = buildStreets(streetsRaw);
   console.log(`  unique streets: ${streets.length}`);
 
-  console.log("Fetching POIs...");
-  const poisRaw = await overpass(POI_QUERY);
-  const pois = buildPois(poisRaw);
+  console.log("Fetching POIs (quadrants)...");
+  const quads = splitBbox(BBOX);
+  const merged = { elements: [] };
+  for (const [i, q] of quads.entries()) {
+    console.log(`  quadrant ${i + 1}/4 ${q.join(",")}`);
+    let raw;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        raw = await overpass(poiQuery(q));
+        break;
+      } catch (e) {
+        console.warn(`    attempt ${attempt} failed: ${e.message}`);
+        if (attempt === 3) throw e;
+        await new Promise((r) => setTimeout(r, 2000 * attempt));
+      }
+    }
+    merged.elements.push(...raw.elements);
+  }
+  const pois = buildPois(merged);
   console.log(`  POIs: ${pois.length}`);
 
   const payload = {

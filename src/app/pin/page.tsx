@@ -5,9 +5,11 @@ import { MapPin, SkipForward, Check, RotateCcw } from "lucide-react";
 import { GameShell, ScoreBadge } from "@/components/GameShell";
 import BergenMap from "@/components/MapClient";
 import { AreaPicker } from "@/components/AreaPicker";
+import { ZoomToggle } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
 import { fmtMetres, haversine } from "@/lib/geo";
-import { DEFAULT_AREA, isInArea, type Area } from "@/lib/areas";
+import { DEFAULT_AREA, poiInArea, type Area } from "@/lib/areas";
+import type { ZoomMode } from "@/components/Map";
 import type { BergenData, LatLng, Poi } from "@/lib/types";
 
 type Phase = "guessing" | "revealed";
@@ -23,16 +25,21 @@ function pinScore(metres: number): number {
 export default function PinPage() {
   const [data, setData] = useState<BergenData | null>(null);
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
+  const [zoom, setZoom] = useState<ZoomMode>("auto");
   const [target, setTarget] = useState<Poi | null>(null);
   const [guess, setGuess] = useState<LatLng | null>(null);
   const [phase, setPhase] = useState<Phase>("guessing");
   const [score, setScore] = useState(0);
   const [rounds, setRounds] = useState(0);
+  const [scoredRounds, setScoredRounds] = useState(0);
+  const [totalDistance, setTotalDistance] = useState(0);
+  const [bestDistance, setBestDistance] = useState<number | null>(null);
+  const [perfectCount, setPerfectCount] = useState(0);
   const [last, setLast] = useState<{ distance: number; points: number } | null>(null);
 
   const playable = useMemo(() => {
     if (!data) return [] as Poi[];
-    const pool = data.pois.filter((p) => isInArea([p.lat, p.lon], area));
+    const pool = data.pois.filter((p) => poiInArea(p, area));
     return pool.length > 0 ? pool : data.pois;
   }, [data, area]);
 
@@ -64,6 +71,10 @@ export default function PinPage() {
     setLast({ distance: d, points: pts });
     setScore((s) => s + pts);
     setRounds((r) => r + 1);
+    setScoredRounds((n) => n + 1);
+    setTotalDistance((t) => t + d);
+    setBestDistance((b) => (b === null ? d : Math.min(b, d)));
+    if (d <= 30) setPerfectCount((n) => n + 1);
     setPhase("revealed");
   };
 
@@ -75,8 +86,29 @@ export default function PinPage() {
   const reset = () => {
     setScore(0);
     setRounds(0);
+    setScoredRounds(0);
+    setTotalDistance(0);
+    setBestDistance(null);
+    setPerfectCount(0);
     nextRound();
   };
+
+  const kpis = [
+    {
+      label: "total off",
+      value: scoredRounds > 0 ? fmtMetres(totalDistance) : "—",
+    },
+    {
+      label: "avg",
+      value:
+        scoredRounds > 0 ? fmtMetres(totalDistance / scoredRounds) : "—",
+    },
+    {
+      label: "best",
+      value: bestDistance !== null ? fmtMetres(bestDistance) : "—",
+    },
+    { label: "spot-on", value: String(perfectCount) },
+  ];
 
   const answerMarker: LatLng | null =
     phase === "revealed" && target ? [target.lat, target.lon] : null;
@@ -85,11 +117,12 @@ export default function PinPage() {
     <GameShell
       title="Pin the address"
       subtitle="A landmark in Bergen. Drop a pin exactly where it stands."
-      status={<ScoreBadge score={score} rounds={rounds} />}
+      status={<ScoreBadge score={score} rounds={rounds} extras={kpis} />}
       loading={!data}
       side={
         <>
           <AreaPicker area={area} onChange={setArea} />
+          <ZoomToggle value={zoom} onChange={setZoom} />
 
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
@@ -167,6 +200,7 @@ export default function PinPage() {
           onMapClick={(p) => phase === "guessing" && setGuess(p)}
           area={area}
           fitArea={area}
+          zoomMode={zoom}
         />
       }
     />

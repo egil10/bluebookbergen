@@ -11,6 +11,21 @@ export interface Street {
   oneway: boolean;
   segments: StreetSegment[];
   center: LatLng;
+  bydel?: string; // attached from the kommune gatetab at load time
+}
+
+export interface GatetabEntry {
+  name: string;
+  code: string | null;
+  bydel: string | null;
+  postnr: string | null;
+}
+
+export interface Gatetab {
+  source: string;
+  parsedAt: string;
+  count: number;
+  entries: GatetabEntry[];
 }
 
 export interface Poi {

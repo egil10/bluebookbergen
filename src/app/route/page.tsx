@@ -15,7 +15,7 @@ import BergenMap from "@/components/MapClient";
 import { AreaPicker } from "@/components/AreaPicker";
 import { loadBergen } from "@/lib/data";
 import { haversine, normaliseName } from "@/lib/geo";
-import { DEFAULT_AREA, isInArea, type Area } from "@/lib/areas";
+import { DEFAULT_AREA, poiInArea, type Area } from "@/lib/areas";
 import type { BergenData, LatLng, Poi } from "@/lib/types";
 
 type Phase = "guessing" | "loading" | "revealed";
@@ -77,6 +77,10 @@ export default function RoutePage() {
   const [error, setError] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [rounds, setRounds] = useState(0);
+  const [scoredRounds, setScoredRounds] = useState(0);
+  const [totalPctSum, setTotalPctSum] = useState(0); // sum of per-round pct (0..1)
+  const [totalMatched, setTotalMatched] = useState(0);
+  const [totalRouteKm, setTotalRouteKm] = useState(0);
   const [lastBreakdown, setLastBreakdown] = useState<{
     matched: string[];
     missed: string[];
@@ -101,7 +105,7 @@ export default function RoutePage() {
 
   const areaPois = useMemo(() => {
     if (!data) return [] as Poi[];
-    return data.pois.filter((p) => isInArea([p.lat, p.lon], area));
+    return data.pois.filter((p) => poiInArea(p, area));
   }, [data, area]);
 
   const nextRound = useCallback(() => {
@@ -161,6 +165,10 @@ export default function RoutePage() {
       setLastBreakdown({ matched, missed, extras, pct, points });
       setScore((s) => s + points);
       setRounds((r) => r + 1);
+      setScoredRounds((n) => n + 1);
+      setTotalPctSum((p) => p + pct);
+      setTotalMatched((m) => m + matched.length);
+      setTotalRouteKm((k) => k + r.distanceM / 1000);
       setPhase("revealed");
     } catch (e) {
       setError(e instanceof Error ? e.message : "route failed");
@@ -171,8 +179,27 @@ export default function RoutePage() {
   const reset = () => {
     setScore(0);
     setRounds(0);
+    setScoredRounds(0);
+    setTotalPctSum(0);
+    setTotalMatched(0);
+    setTotalRouteKm(0);
     nextRound();
   };
+
+  const kpis = [
+    {
+      label: "accuracy",
+      value:
+        scoredRounds > 0
+          ? `${Math.round((totalPctSum / scoredRounds) * 100)}%`
+          : "—",
+    },
+    { label: "matched", value: String(totalMatched) },
+    {
+      label: "route km",
+      value: scoredRounds > 0 ? totalRouteKm.toFixed(1) : "—",
+    },
+  ];
 
   // Extra markers for endpoints + dashed real route via hint
   const extraMarkers = useMemo(() => {
@@ -200,7 +227,7 @@ export default function RoutePage() {
     <GameShell
       title="Plan the route"
       subtitle="From A to B. List the streets you'd drive — in any order works, order is a bonus."
-      status={<ScoreBadge score={score} rounds={rounds} />}
+      status={<ScoreBadge score={score} rounds={rounds} extras={kpis} />}
       loading={!data}
       side={
         <>

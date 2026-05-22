@@ -5,9 +5,11 @@ import { Crosshair, SkipForward, Check, RotateCcw } from "lucide-react";
 import { GameShell, ScoreBadge } from "@/components/GameShell";
 import BergenMap from "@/components/MapClient";
 import { AreaPicker } from "@/components/AreaPicker";
+import { ZoomToggle } from "@/components/MapOptions";
 import { loadBergen } from "@/lib/data";
 import { distanceScore, distanceToStreet, fmtMetres } from "@/lib/geo";
-import { DEFAULT_AREA, isInArea, type Area } from "@/lib/areas";
+import { DEFAULT_AREA, streetInArea, type Area } from "@/lib/areas";
+import type { ZoomMode } from "@/components/Map";
 import type { BergenData, LatLng, Street } from "@/lib/types";
 
 type Phase = "guessing" | "revealed";
@@ -15,11 +17,16 @@ type Phase = "guessing" | "revealed";
 export default function LocatePage() {
   const [data, setData] = useState<BergenData | null>(null);
   const [area, setArea] = useState<Area>(DEFAULT_AREA);
+  const [zoom, setZoom] = useState<ZoomMode>("auto");
   const [target, setTarget] = useState<Street | null>(null);
   const [guess, setGuess] = useState<LatLng | null>(null);
   const [phase, setPhase] = useState<Phase>("guessing");
   const [score, setScore] = useState(0);
   const [rounds, setRounds] = useState(0);
+  const [scoredRounds, setScoredRounds] = useState(0);
+  const [totalDistance, setTotalDistance] = useState(0);
+  const [bestDistance, setBestDistance] = useState<number | null>(null);
+  const [perfectCount, setPerfectCount] = useState(0);
   const [lastDistance, setLastDistance] = useState<number | null>(null);
   const [lastPoints, setLastPoints] = useState<number | null>(null);
 
@@ -28,7 +35,7 @@ export default function LocatePage() {
     return data.streets.filter((s) => {
       const totalPts = s.segments.reduce((n, seg) => n + seg.coords.length, 0);
       if (totalPts < 3) return false;
-      return isInArea(s.center, area);
+      return streetInArea(s, area);
     });
   }, [data, area]);
 
@@ -62,6 +69,10 @@ export default function LocatePage() {
     setLastPoints(pts);
     setScore((s) => s + pts);
     setRounds((r) => r + 1);
+    setScoredRounds((n) => n + 1);
+    setTotalDistance((t) => t + d);
+    setBestDistance((b) => (b === null ? d : Math.min(b, d)));
+    if (d <= 25) setPerfectCount((n) => n + 1);
     setPhase("revealed");
   };
 
@@ -73,18 +84,40 @@ export default function LocatePage() {
   const reset = () => {
     setScore(0);
     setRounds(0);
+    setScoredRounds(0);
+    setTotalDistance(0);
+    setBestDistance(null);
+    setPerfectCount(0);
     nextRound();
   };
+
+  const kpis = [
+    {
+      label: "total off",
+      value: scoredRounds > 0 ? fmtMetres(totalDistance) : "—",
+    },
+    {
+      label: "avg",
+      value:
+        scoredRounds > 0 ? fmtMetres(totalDistance / scoredRounds) : "—",
+    },
+    {
+      label: "best",
+      value: bestDistance !== null ? fmtMetres(bestDistance) : "—",
+    },
+    { label: "spot-on", value: String(perfectCount) },
+  ];
 
   return (
     <GameShell
       title="Locate the street"
       subtitle="Read the name, then click where you think the street is."
-      status={<ScoreBadge score={score} rounds={rounds} />}
+      status={<ScoreBadge score={score} rounds={rounds} extras={kpis} />}
       loading={!data}
       side={
         <>
           <AreaPicker area={area} onChange={setArea} />
+          <ZoomToggle value={zoom} onChange={setZoom} />
 
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
@@ -164,6 +197,7 @@ export default function LocatePage() {
           showStreetLabel={phase === "revealed"}
           area={area}
           fitArea={area}
+          zoomMode={zoom}
         />
       }
     />

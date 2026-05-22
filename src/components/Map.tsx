@@ -20,6 +20,8 @@ import type { Area } from "@/lib/areas";
 export const BERGEN_CENTER: LatLng = [60.392, 5.324];
 export const BERGEN_ZOOM = 14;
 
+export type ZoomMode = "auto" | "manual";
+
 export interface BergenMapProps {
   highlighted?: Street | null;
   hint?: Street | null; // ghost overlay (e.g. the correct answer reveal)
@@ -35,6 +37,9 @@ export interface BergenMapProps {
   // Faint "background" streets, used by explore mode.
   background?: Street[];
   backgroundLabels?: boolean;
+  // When "manual", skip auto-fitting to per-round targets. Area changes
+  // still re-frame (since the user explicitly changed area).
+  zoomMode?: ZoomMode;
 }
 
 const FitBounds = ({ street }: { street: Street | null | undefined }) => {
@@ -170,6 +175,7 @@ export default function BergenMap({
   fitArea,
   background,
   backgroundLabels,
+  zoomMode = "auto",
 }: BergenMapProps) {
   return (
     <div className={className ?? "w-full h-full"}>
@@ -260,7 +266,13 @@ export default function BergenMap({
             </Tooltip>
           </CircleMarker>
         ))}
-        <FitBounds street={fitTarget ?? highlighted ?? hint ?? null} />
+        <FitBounds
+          street={
+            zoomMode === "manual"
+              ? null
+              : (fitTarget ?? highlighted ?? hint ?? null)
+          }
+        />
         <FitArea area={fitArea ?? null} />
       </MapContainer>
     </div>
