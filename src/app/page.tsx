@@ -1,5 +1,14 @@
 import Link from "next/link";
-import { Crosshair, Type, Route as RouteIcon, ListOrdered, ArrowRight } from "lucide-react";
+import {
+  Crosshair,
+  Type,
+  Route as RouteIcon,
+  ListOrdered,
+  ArrowRight,
+  MapPin,
+  ListChecks,
+  Compass,
+} from "lucide-react";
 
 const modes = [
   {
@@ -10,6 +19,13 @@ const modes = [
       "We name a street, you click it on the map. We measure how close you got, in metres.",
   },
   {
+    href: "/pin",
+    icon: MapPin,
+    title: "Pin the address",
+    blurb:
+      "An exact landmark — drop a pin on the spot. Scored on metres-from-truth, strict and unforgiving.",
+  },
+  {
     href: "/name",
     icon: Type,
     title: "Name the street",
@@ -17,11 +33,25 @@ const modes = [
       "A street lights up on the map. Type the name. Norwegian characters welcome, typos forgiven.",
   },
   {
+    href: "/quiz",
+    icon: ListChecks,
+    title: "Multiple choice",
+    blurb:
+      "A street is highlighted. Pick its name from four options. Snackable and fast-paced.",
+  },
+  {
     href: "/route",
     icon: RouteIcon,
     title: "Plan the route",
     blurb:
       "Two random points in Bergen Sentrum — list the streets you would drive, in order.",
+  },
+  {
+    href: "/explore",
+    icon: Compass,
+    title: "Explore the map",
+    blurb:
+      "Free-roam, toggle the street labels on and off, and learn the lay of the land.",
   },
   {
     href: "/streets",
@@ -45,7 +75,7 @@ export default function Home() {
         <p className="mt-5 text-slate-600 text-lg leading-relaxed">
           A practice ground inspired by the London cab drivers&apos; Knowledge. Endless
           rounds, an interactive map, and 648 named streets pulled straight from
-          OpenStreetMap.
+          OpenStreetMap — filterable by neighbourhood.
         </p>
         <div className="mt-7 flex gap-3 flex-wrap">
           <Link
@@ -56,10 +86,10 @@ export default function Home() {
             <ArrowRight size={16} />
           </Link>
           <Link
-            href="/streets"
+            href="/explore"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium border border-slate-200 hover:border-slate-300 text-slate-700"
           >
-            Browse the streets
+            Explore the map
           </Link>
         </div>
       </section>

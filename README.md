@@ -4,13 +4,18 @@ A "Knowledge"-style training game for memorising the streets of Bergen,
 Norway. Inspired by the famous test London cab drivers sit before they
 get a licence — but for Bergen Sentrum and surrounds.
 
-Four modes, light theme, hyper-minimal, no accounts:
+Light theme, hyper-minimal, no accounts. Every mode supports a sub-area
+("bydel") filter so you can practise just Nordnes, Sandviken,
+Møhlenpris, or the whole bbox.
 
 1. **Locate the street** — name is shown, click where it is.
-2. **Name the street** — street is highlighted, type its name.
-3. **Plan the route** — A → B, list the streets you'd drive (routed
+2. **Pin the address** — landmark is shown, drop a pin on the exact spot.
+3. **Name the street** — street is highlighted, type its name.
+4. **Multiple choice** — street is highlighted, pick the name from four.
+5. **Plan the route** — A → B, list the streets you'd drive (routed
    against the public OSRM router for ground truth).
-4. **Streets** — searchable index, traced on the map.
+6. **Explore the map** — free-roam, toggle the street labels on/off.
+7. **Streets** — searchable index, traced on the map.
 
 ## Stack
 

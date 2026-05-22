@@ -5,6 +5,8 @@ import {
   MapContainer,
   TileLayer,
   Polyline,
+  Polygon,
+  Rectangle,
   CircleMarker,
   Tooltip,
   useMap,
@@ -12,6 +14,7 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import type { LatLng, Street } from "@/lib/types";
+import type { Area } from "@/lib/areas";
 
 // Bergen Sentrum default centre + zoom.
 export const BERGEN_CENTER: LatLng = [60.392, 5.324];
@@ -27,6 +30,11 @@ export interface BergenMapProps {
   fitTarget?: Street | null;
   className?: string;
   showStreetLabel?: boolean;
+  area?: Area | null;
+  fitArea?: Area | null; // pan/zoom to area on change
+  // Faint "background" streets, used by explore mode.
+  background?: Street[];
+  backgroundLabels?: boolean;
 }
 
 const FitBounds = ({ street }: { street: Street | null | undefined }) => {
@@ -38,6 +46,19 @@ const FitBounds = ({ street }: { street: Street | null | undefined }) => {
     const bounds = L.latLngBounds(pts.map((p) => L.latLng(p[0], p[1])));
     map.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
   }, [street, map]);
+  return null;
+};
+
+const FitArea = ({ area }: { area: Area | null | undefined }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!area) return;
+    const [s, w, n, e] = area.bbox;
+    map.fitBounds(
+      L.latLngBounds(L.latLng(s, w), L.latLng(n, e)),
+      { padding: [30, 30] },
+    );
+  }, [area, map]);
   return null;
 };
 
@@ -55,12 +76,14 @@ function StreetLines({
   color,
   weight,
   dashArray,
+  opacity,
   label,
 }: {
   street: Street;
   color: string;
   weight: number;
   dashArray?: string;
+  opacity?: number;
   label?: string;
 }) {
   return (
@@ -72,7 +95,7 @@ function StreetLines({
           pathOptions={{
             color,
             weight,
-            opacity: 0.95,
+            opacity: opacity ?? 0.95,
             lineCap: "round",
             lineJoin: "round",
             dashArray,
@@ -89,6 +112,50 @@ function StreetLines({
   );
 }
 
+// Translucent "outside" mask + crisp outline around the play area. We draw a
+// polygon spanning the world with a rectangular hole over the bbox, plus a
+// dashed border on the bbox itself. Result: subtle but legible boundary.
+function AreaOverlay({ area }: { area: Area }) {
+  const [s, w, n, e] = area.bbox;
+  const outer: LatLng[] = [
+    [-85, -180],
+    [-85, 180],
+    [85, 180],
+    [85, -180],
+  ];
+  const hole: LatLng[] = [
+    [s, w],
+    [s, e],
+    [n, e],
+    [n, w],
+  ];
+  return (
+    <>
+      <Polygon
+        positions={[outer, hole]}
+        pathOptions={{
+          color: "transparent",
+          fillColor: "#0b1d3a",
+          fillOpacity: 0.06,
+          stroke: false,
+          interactive: false,
+        }}
+      />
+      <Rectangle
+        bounds={L.latLngBounds(L.latLng(s, w), L.latLng(n, e))}
+        pathOptions={{
+          color: "#3d6798",
+          weight: 1.5,
+          opacity: 0.65,
+          dashArray: "4 6",
+          fill: false,
+          interactive: false,
+        }}
+      />
+    </>
+  );
+}
+
 export default function BergenMap({
   highlighted,
   hint,
@@ -99,6 +166,10 @@ export default function BergenMap({
   fitTarget,
   className,
   showStreetLabel,
+  area,
+  fitArea,
+  background,
+  backgroundLabels,
 }: BergenMapProps) {
   return (
     <div className={className ?? "w-full h-full"}>
@@ -108,6 +179,7 @@ export default function BergenMap({
         scrollWheelZoom
         zoomControl
         className="h-full w-full"
+        minZoom={11}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -115,6 +187,17 @@ export default function BergenMap({
           maxZoom={19}
         />
         <ClickHandler onClick={onMapClick} />
+        {area && <AreaOverlay area={area} />}
+        {background?.map((s) => (
+          <StreetLines
+            key={`bg-${s.name}`}
+            street={s}
+            color="#6b87b0"
+            weight={3}
+            opacity={0.55}
+            label={backgroundLabels ? s.name : undefined}
+          />
+        ))}
         {hint && (
           <StreetLines
             street={hint}
@@ -178,6 +261,7 @@ export default function BergenMap({
           </CircleMarker>
         ))}
         <FitBounds street={fitTarget ?? highlighted ?? hint ?? null} />
+        <FitArea area={fitArea ?? null} />
       </MapContainer>
     </div>
   );

@@ -1,0 +1,199 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ListChecks, SkipForward, RotateCcw } from "lucide-react";
+import { GameShell, ScoreBadge } from "@/components/GameShell";
+import BergenMap from "@/components/MapClient";
+import { AreaPicker } from "@/components/AreaPicker";
+import { loadBergen } from "@/lib/data";
+import { DEFAULT_AREA, isInArea, type Area } from "@/lib/areas";
+import type { BergenData, Street } from "@/lib/types";
+
+type Phase = "guessing" | "revealed";
+
+function pickN<T>(arr: T[], n: number, exclude: T): T[] {
+  const pool = arr.filter((x) => x !== exclude);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, n);
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+export default function QuizPage() {
+  const [data, setData] = useState<BergenData | null>(null);
+  const [area, setArea] = useState<Area>(DEFAULT_AREA);
+  const [target, setTarget] = useState<Street | null>(null);
+  const [options, setOptions] = useState<Street[]>([]);
+  const [picked, setPicked] = useState<Street | null>(null);
+  const [phase, setPhase] = useState<Phase>("guessing");
+  const [score, setScore] = useState(0);
+  const [rounds, setRounds] = useState(0);
+
+  const playable = useMemo(() => {
+    if (!data) return [] as Street[];
+    return data.streets.filter((s) => {
+      const totalPts = s.segments.reduce((n, seg) => n + seg.coords.length, 0);
+      if (totalPts < 4) return false;
+      return isInArea(s.center, area);
+    });
+  }, [data, area]);
+
+  const nextRound = useCallback(() => {
+    if (playable.length < 4) return;
+    let pick: Street;
+    do {
+      pick = playable[Math.floor(Math.random() * playable.length)];
+    } while (pick === target && playable.length > 1);
+    const distractors = pickN(playable, 3, pick);
+    const opts = shuffle([pick, ...distractors]);
+    setTarget(pick);
+    setOptions(opts);
+    setPicked(null);
+    setPhase("guessing");
+  }, [playable, target]);
+
+  useEffect(() => {
+    loadBergen().then(setData);
+  }, []);
+
+  useEffect(() => {
+    if (data) nextRound();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, area]);
+
+  const choose = (s: Street) => {
+    if (phase !== "guessing" || !target) return;
+    setPicked(s);
+    const correct = s === target;
+    setScore((sc) => sc + (correct ? 100 : 0));
+    setRounds((r) => r + 1);
+    setPhase("revealed");
+  };
+
+  const skip = () => {
+    setRounds((r) => r + 1);
+    nextRound();
+  };
+
+  const reset = () => {
+    setScore(0);
+    setRounds(0);
+    nextRound();
+  };
+
+  return (
+    <GameShell
+      title="Multiple choice"
+      subtitle="One street is highlighted. Pick its name from four options."
+      status={<ScoreBadge score={score} rounds={rounds} />}
+      loading={!data}
+      side={
+        <>
+          <AreaPicker area={area} onChange={setArea} />
+
+          <div>
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
+              <ListChecks size={12} /> Which street is highlighted?
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-2">
+              {options.map((s) => {
+                const isCorrect = phase === "revealed" && s === target;
+                const isWrongPick =
+                  phase === "revealed" && s === picked && picked !== target;
+                const base =
+                  "w-full text-left px-3 py-2.5 rounded-md text-sm border transition-colors";
+                let tone =
+                  "border-slate-200 bg-slate-50 hover:border-bergen-300 hover:bg-white text-ink";
+                if (isCorrect) {
+                  tone = "border-emerald-300 bg-emerald-50 text-emerald-800";
+                } else if (isWrongPick) {
+                  tone = "border-rose-300 bg-rose-50 text-rose-800";
+                } else if (phase === "revealed") {
+                  tone = "border-slate-200 bg-white text-slate-500";
+                }
+                return (
+                  <button
+                    key={s.name}
+                    onClick={() => choose(s)}
+                    disabled={phase === "revealed"}
+                    className={`${base} ${tone} disabled:cursor-default`}
+                  >
+                    {s.name}
+                  </button>
+                );
+              })}
+              {options.length === 0 && (
+                <div className="text-sm text-slate-400">
+                  Not enough streets in this area — pick a wider one.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {phase === "revealed" && target && (
+            <div
+              className={
+                "rounded-md border p-3 " +
+                (picked === target
+                  ? "border-emerald-200 bg-emerald-50/40"
+                  : "border-slate-200 bg-slate-50")
+              }
+            >
+              <div className="text-sm text-slate-500">
+                {picked === target ? "Correct" : "Answer"}
+              </div>
+              <div className="text-2xl font-semibold tracking-tight text-ink mt-0.5">
+                {target.name}
+              </div>
+              <div className="text-sm text-slate-500 mt-1">
+                +{picked === target ? 100 : 0} pts
+              </div>
+            </div>
+          )}
+
+          <div className="mt-auto flex gap-2">
+            <button
+              onClick={nextRound}
+              disabled={phase !== "revealed"}
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white px-4 py-2.5 rounded-md text-sm font-medium hover:bg-bergen-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              Next street
+            </button>
+            <button
+              onClick={skip}
+              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300"
+              title="Skip"
+            >
+              <SkipForward size={16} />
+            </button>
+            <button
+              onClick={reset}
+              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium border border-slate-200 text-slate-600 hover:border-slate-300"
+              title="Reset score"
+            >
+              <RotateCcw size={16} />
+            </button>
+          </div>
+        </>
+      }
+      map={
+        <BergenMap
+          highlighted={target}
+          fitTarget={target}
+          showStreetLabel={phase === "revealed"}
+          area={area}
+        />
+      }
+    />
+  );
+}

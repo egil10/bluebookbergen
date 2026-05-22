@@ -4,14 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Type, SkipForward, Check, RotateCcw, Eye } from "lucide-react";
 import { GameShell, ScoreBadge } from "@/components/GameShell";
 import BergenMap from "@/components/MapClient";
+import { AreaPicker } from "@/components/AreaPicker";
 import { loadBergen } from "@/lib/data";
 import { normaliseName, similarity } from "@/lib/geo";
+import { DEFAULT_AREA, isInArea, type Area } from "@/lib/areas";
 import type { BergenData, Street } from "@/lib/types";
 
 type Phase = "guessing" | "revealed";
 
 export default function NamePage() {
   const [data, setData] = useState<BergenData | null>(null);
+  const [area, setArea] = useState<Area>(DEFAULT_AREA);
   const [target, setTarget] = useState<Street | null>(null);
   const [text, setText] = useState("");
   const [phase, setPhase] = useState<Phase>("guessing");
@@ -28,9 +31,10 @@ export default function NamePage() {
     if (!data) return [] as Street[];
     return data.streets.filter((s) => {
       const totalPts = s.segments.reduce((n, seg) => n + seg.coords.length, 0);
-      return totalPts >= 4;
+      if (totalPts < 4) return false;
+      return isInArea(s.center, area);
     });
-  }, [data]);
+  }, [data, area]);
 
   const allNames = useMemo(
     () => (data?.streets ?? []).map((s) => s.name),
@@ -51,7 +55,7 @@ export default function NamePage() {
     let pick: Street;
     do {
       pick = playable[Math.floor(Math.random() * playable.length)];
-    } while (pick === target);
+    } while (pick === target && playable.length > 1);
     setTarget(pick);
     setText("");
     setVerdict(null);
@@ -64,8 +68,9 @@ export default function NamePage() {
   }, []);
 
   useEffect(() => {
-    if (data && !target) nextRound();
-  }, [data, target, nextRound]);
+    if (data) nextRound();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, area]);
 
   const submit = (override?: string) => {
     if (!target) return;
@@ -106,6 +111,8 @@ export default function NamePage() {
       loading={!data}
       side={
         <>
+          <AreaPicker area={area} onChange={setArea} />
+
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
               <Type size={12} />
@@ -218,6 +225,7 @@ export default function NamePage() {
           highlighted={target}
           fitTarget={target}
           showStreetLabel={phase === "revealed"}
+          area={area}
         />
       }
     />

@@ -12,8 +12,10 @@ import {
 } from "lucide-react";
 import { GameShell, ScoreBadge } from "@/components/GameShell";
 import BergenMap from "@/components/MapClient";
+import { AreaPicker } from "@/components/AreaPicker";
 import { loadBergen } from "@/lib/data";
 import { haversine, normaliseName } from "@/lib/geo";
+import { DEFAULT_AREA, isInArea, type Area } from "@/lib/areas";
 import type { BergenData, LatLng, Poi } from "@/lib/types";
 
 type Phase = "guessing" | "loading" | "revealed";
@@ -52,19 +54,21 @@ async function fetchRoute(a: LatLng, b: LatLng): Promise<RouteResult> {
   };
 }
 
-function pickEndpoints(pois: Poi[]): [Poi, Poi] {
-  for (let i = 0; i < 50; i++) {
+function pickEndpoints(pois: Poi[]): [Poi, Poi] | null {
+  if (pois.length < 2) return null;
+  for (let i = 0; i < 80; i++) {
     const a = pois[Math.floor(Math.random() * pois.length)];
     const b = pois[Math.floor(Math.random() * pois.length)];
     if (a === b) continue;
     const d = haversine([a.lat, a.lon], [b.lat, b.lon]);
-    if (d > 400 && d < 2500) return [a, b];
+    if (d > 300 && d < 2500) return [a, b];
   }
   return [pois[0], pois[1]];
 }
 
 export default function RoutePage() {
   const [data, setData] = useState<BergenData | null>(null);
+  const [area, setArea] = useState<Area>(DEFAULT_AREA);
   const [endpoints, setEndpoints] = useState<[Poi, Poi] | null>(null);
   const [streetsInput, setStreetsInput] = useState("");
   const [chips, setChips] = useState<string[]>([]);
@@ -95,9 +99,15 @@ export default function RoutePage() {
       .slice(0, 6);
   }, [streetsInput, allNames, chips, phase]);
 
+  const areaPois = useMemo(() => {
+    if (!data) return [] as Poi[];
+    return data.pois.filter((p) => isInArea([p.lat, p.lon], area));
+  }, [data, area]);
+
   const nextRound = useCallback(() => {
     if (!data) return;
-    const ends = pickEndpoints(data.pois);
+    const pool = areaPois.length >= 2 ? areaPois : data.pois;
+    const ends = pickEndpoints(pool);
     setEndpoints(ends);
     setStreetsInput("");
     setChips([]);
@@ -105,15 +115,16 @@ export default function RoutePage() {
     setError(null);
     setLastBreakdown(null);
     setPhase("guessing");
-  }, [data]);
+  }, [data, areaPois]);
 
   useEffect(() => {
     loadBergen().then(setData);
   }, []);
 
   useEffect(() => {
-    if (data && !endpoints) nextRound();
-  }, [data, endpoints, nextRound]);
+    if (data) nextRound();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, area]);
 
   const addChip = (name?: string) => {
     const v = (name ?? streetsInput).trim();
@@ -193,6 +204,7 @@ export default function RoutePage() {
       loading={!data}
       side={
         <>
+          <AreaPicker area={area} onChange={setArea} />
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-medium">
               <RouteIcon size={12} />
@@ -373,6 +385,7 @@ export default function RoutePage() {
           highlighted={routeAsStreet}
           extraMarkers={extraMarkers}
           fitTarget={routeAsStreet}
+          area={area}
         />
       }
     />
